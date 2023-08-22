@@ -1,5 +1,7 @@
 import functools
 import os
+import pathlib
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -91,6 +93,9 @@ class CSVDailyBarDataSource(object):
         `pd.DataFrame`
             DataFrame of the CSV file with timestamps localised to UTC.
         """
+
+        # csv_dir: Path = pathlib.Path(self.csv_dir)
+        # file_path: Path = pathlib.Path(csv_dir, csv_file)
         csv_df = pd.read_csv(
             os.path.join(self.csv_dir, csv_file),
             index_col='Date',
