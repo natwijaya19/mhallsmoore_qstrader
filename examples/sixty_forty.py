@@ -1,4 +1,5 @@
 import os
+import pathlib
 
 import pandas as pd
 import pytz
@@ -23,7 +24,8 @@ if __name__ == "__main__":
 
     # To avoid loading all CSV files in the directory, set the
     # data source to load only those provided symbols
-    csv_dir = os.environ.get('QSTRADER_CSV_DATA_DIR', '.')
+    # csv_dir = os.environ.get('QSTRADER_CSV_DATA_DIR', '.')
+    csv_dir = pathlib.Path("..", "data")
     data_source = CSVDailyBarDataSource(csv_dir, Equity, csv_symbols=strategy_symbols)
     data_handler = BacktestDataHandler(strategy_universe, data_sources=[data_source])
 
