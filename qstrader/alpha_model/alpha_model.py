@@ -1,5 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
+import pandas as pd
+
 
 class AlphaModel(object):
     """
@@ -19,7 +21,7 @@ class AlphaModel(object):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def __call__(self, dt):
+    def __call__(self, dt: pd.Timestamp) -> dict[str, float]:
         raise NotImplementedError(
             "Should implement __call__()"
         )

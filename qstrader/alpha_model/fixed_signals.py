@@ -1,4 +1,8 @@
+import pandas as pd
+
 from qstrader.alpha_model.alpha_model import AlphaModel
+from qstrader.asset.universe.universe import Universe
+from qstrader.data.backtest_data_handler import BacktestDataHandler
 
 
 class FixedSignalsAlphaModel(AlphaModel):
@@ -17,16 +21,16 @@ class FixedSignalsAlphaModel(AlphaModel):
     """
 
     def __init__(
-        self,
-        signal_weights,
-        universe=None,
-        data_handler=None
-    ):
-        self.signal_weights = signal_weights
-        self.universe = universe
-        self.data_handler = data_handler
+            self,
+            signal_weights: dict[str, float],
+            universe: Universe = None,
+            data_handler: BacktestDataHandler = None
+    ) -> None:
+        self.signal_weights: dict[str, float] = signal_weights
+        self.universe: Universe = universe
+        self.data_handler: BacktestDataHandler = data_handler
 
-    def __call__(self, dt):
+    def __call__(self, dt: pd.Timestamp) -> dict[str, float]:
         """
         Produce the dictionary of fixed scalar signals for
         each of the Asset instances within the Universe.

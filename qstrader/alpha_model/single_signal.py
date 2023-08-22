@@ -1,4 +1,12 @@
+from __future__ import annotations
+
+from typing import List
+
+import pandas as pd
+
 from qstrader.alpha_model.alpha_model import AlphaModel
+from qstrader.asset.universe.universe import Universe
+from qstrader.data.backtest_data_handler import BacktestDataHandler
 
 
 class SingleSignalAlphaModel(AlphaModel):
@@ -17,16 +25,16 @@ class SingleSignalAlphaModel(AlphaModel):
     """
 
     def __init__(
-        self,
-        universe,
-        signal=1.0,
-        data_handler=None
+            self,
+            universe: Universe,
+            signal: dict[str, float] | float = 1.0,
+            data_handler: BacktestDataHandler = None
     ):
-        self.universe = universe
-        self.signal = signal
-        self.data_handler = data_handler
+        self.universe: Universe = universe
+        self.signal: dict[str, float] | float = signal
+        self.data_handler: BacktestDataHandler = data_handler
 
-    def __call__(self, dt):
+    def __call__(self, dt: pd.Timestamp) -> dict[str, float] | float:
         """
         Produce the dictionary of single fixed scalar signals for
         each of the Asset instances within the Universe.
@@ -42,5 +50,5 @@ class SingleSignalAlphaModel(AlphaModel):
         `dict{str: float}`
             The Asset symbol keyed scalar-valued signals.
         """
-        assets = self.universe.get_assets(dt)
+        assets: list[str] = self.universe.get_assets(dt)
         return {asset: self.signal for asset in assets}

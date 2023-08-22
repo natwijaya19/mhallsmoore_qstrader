@@ -1,5 +1,7 @@
 import numpy as np
 
+from qstrader.broker.broker import Broker
+from qstrader.data.backtest_data_handler import BacktestDataHandler
 from qstrader.portcon.order_sizer.order_sizer import OrderSizer
 
 
@@ -23,20 +25,20 @@ class LongShortLeveragedOrderSizer(OrderSizer):
     """
 
     def __init__(
-        self,
-        broker,
-        broker_portfolio_id,
-        data_handler,
-        gross_leverage=1.0
+            self,
+            broker: Broker,
+            broker_portfolio_id: str,
+            data_handler: BacktestDataHandler,
+            gross_leverage: float = 1.0
     ):
-        self.broker = broker
-        self.broker_portfolio_id = broker_portfolio_id
-        self.data_handler = data_handler
-        self.gross_leverage = self._check_set_gross_leverage(
-            gross_leverage
+        self.broker: Broker = broker
+        self.broker_portfolio_id: str = broker_portfolio_id
+        self.data_handler: BacktestDataHandler = data_handler
+        self.gross_leverage: float = self._check_set_gross_leverage(
+            gross_leverage=gross_leverage
         )
 
-    def _check_set_gross_leverage(self, gross_leverage):
+    def _check_set_gross_leverage(self, gross_leverage: float):
         """
         Checks and sets the gross leverage percentage value.
 
@@ -52,7 +54,7 @@ class LongShortLeveragedOrderSizer(OrderSizer):
             The gross leverage percentage value.
         """
         if (
-            gross_leverage <= 0.0
+                gross_leverage <= 0.0
         ):
             raise ValueError(
                 'Gross leverage "%s" provided to long-short levered '
@@ -149,10 +151,14 @@ class LongShortLeveragedOrderSizer(OrderSizer):
 
             if np.isnan(asset_price):
                 raise ValueError(
-                    'Asset price for "%s" at timestamp "%s" is Not-a-Number (NaN). '
-                    'This can occur if the chosen backtest start date is earlier '
-                    'than the first available price for a particular asset. Try '
-                    'modifying the backtest start date and re-running.' % (asset, dt)
+                    'Asset price for "%s" at timestamp "%s" is Not-a-Number ('
+                    'NaN). '
+                    'This can occur if the chosen backtest start date is '
+                    'earlier '
+                    'than the first available price for a particular asset. '
+                    'Try '
+                    'modifying the backtest start date and re-running.' % (
+                        asset, dt)
                 )
 
             # Truncate the after cost dollar weight

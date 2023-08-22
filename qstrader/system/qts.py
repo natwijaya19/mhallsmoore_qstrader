@@ -1,11 +1,12 @@
-from qstrader.execution.execution_handler import (
-    ExecutionHandler
-)
+from qstrader.alpha_model.alpha_model import AlphaModel
+from qstrader.asset.universe.universe import Universe
+from qstrader.broker.broker import Broker
+from qstrader.data.backtest_data_handler import BacktestDataHandler
 from qstrader.execution.execution_algo.market_order import (
     MarketOrderExecutionAlgorithm
 )
-from qstrader.portcon.pcm import (
-    PortfolioConstructionModel
+from qstrader.execution.execution_handler import (
+    ExecutionHandler
 )
 from qstrader.portcon.optimiser.fixed_weight import (
     FixedWeightPortfolioOptimiser
@@ -15,6 +16,9 @@ from qstrader.portcon.order_sizer.dollar_weighted import (
 )
 from qstrader.portcon.order_sizer.long_short import (
     LongShortLeveragedOrderSizer
+)
+from qstrader.portcon.pcm import (
+    PortfolioConstructionModel
 )
 
 
@@ -47,26 +51,27 @@ class QuantTradingSystem(object):
     """
 
     def __init__(
-        self,
-        universe,
-        broker,
-        broker_portfolio_id,
-        data_handler,
-        alpha_model,
-        *args,
-        risk_model=None,
-        long_only=False,
-        submit_orders=False,
-        **kwargs
+            self,
+            universe: Universe,
+            broker: Broker,
+            broker_portfolio_id: str,
+            data_handler: BacktestDataHandler,
+            alpha_model: AlphaModel,
+            *args,
+            risk_model: AlphaModel = None,
+            long_only: bool = False,
+            submit_orders: bool = False,
+            **kwargs
     ):
-        self.universe = universe
-        self.broker = broker
-        self.broker_portfolio_id = broker_portfolio_id
-        self.data_handler = data_handler
-        self.alpha_model = alpha_model
-        self.risk_model = risk_model
-        self.long_only = long_only
-        self.submit_orders = submit_orders
+        self.universe: Universe = universe
+        self.broker: Broker = broker
+        self.broker_portfolio_id: str = broker_portfolio_id
+        self.data_handler: BacktestDataHandler = data_handler
+        self.alpha_model: AlphaModel = alpha_model
+        self.risk_model: AlphaModel = risk_model
+        self.long_only: bool = long_only
+        self.submit_orders: bool = submit_orders
+
         self._initialise_models(**kwargs)
 
     def _create_order_sizer(self, **kwargs):

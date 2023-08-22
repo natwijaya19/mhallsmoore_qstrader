@@ -125,8 +125,8 @@ class TopNMomentumAlphaModel(AlphaModel):
         return weights
 
     def __call__(
-            self, dt
-    ):
+            self, dt: pd.Timestamp
+    ) -> dict[str:float]:
         """
         Calculates the signal weights for the top N
         momentum alpha model, assuming that there is
@@ -144,8 +144,8 @@ class TopNMomentumAlphaModel(AlphaModel):
         `dict{str: float}`
             The newly created signal weights dictionary.
         """
-        assets = self.universe.get_assets(dt)
-        weights = {asset: 0.0 for asset in assets}
+        assets: list[str] = self.universe.get_assets(dt)
+        weights: dict[str:float] = {asset: 0.0 for asset in assets}
 
         # Only generate weights if the current time exceeds the
         # momentum lookback period

@@ -26,6 +26,9 @@ class Broker(object):
     account.
     """
 
+    def __init__(self, **kwargs: str) -> None:
+        pass
+
     __metaclass__ = ABCMeta
 
     @abstractmethod

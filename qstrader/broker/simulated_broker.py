@@ -1,13 +1,16 @@
 import queue
 
 import numpy as np
+import pandas as pd
 
 from qstrader import settings
 from qstrader.broker.broker import Broker
 from qstrader.broker.fee_model.fee_model import FeeModel
+from qstrader.broker.fee_model.zero_fee_model import ZeroFeeModel
 from qstrader.broker.portfolio.portfolio import Portfolio
 from qstrader.broker.transaction.transaction import Transaction
-from qstrader.broker.fee_model.zero_fee_model import ZeroFeeModel
+from qstrader.data.backtest_data_handler import BacktestDataHandler
+from qstrader.exchange.exchange import Exchange
 
 
 class SimulatedBroker(Broker):
@@ -44,17 +47,19 @@ class SimulatedBroker(Broker):
     """
 
     def __init__(
-        self,
-        start_dt,
-        exchange,
-        data_handler,
-        account_id=None,
-        base_currency="USD",
-        initial_funds=0.0,
-        fee_model=ZeroFeeModel(),
-        slippage_model=None,
-        market_impact_model=None
-    ):
+            self,
+            start_dt: pd.Timestamp,
+            exchange: Exchange,
+            data_handler: BacktestDataHandler,
+            account_id: str = None,
+            base_currency: str = "USD",
+            initial_funds: float = 0.0,
+            fee_model: FeeModel = ZeroFeeModel(),
+            slippage_model: FeeModel = None,
+            market_impact_model: FeeModel = None
+    ) -> None:
+        super(SimulatedBroker, self).__init__()
+
         self.start_dt = start_dt
         self.exchange = exchange
         self.data_handler = data_handler
@@ -208,7 +213,8 @@ class SimulatedBroker(Broker):
         self.cash_balances[self.base_currency] += amount
         if settings.PRINT_EVENTS:
             print(
-                '(%s) - subscription: %0.2f subscribed to broker account "%s"' % (
+                '(%s) - subscription: %0.2f subscribed to broker account '
+                '"%s"' % (
                     self.current_dt, amount, self.account_id
                 )
             )
@@ -241,7 +247,8 @@ class SimulatedBroker(Broker):
         self.cash_balances[self.base_currency] -= amount
         if settings.PRINT_EVENTS:
             print(
-                '(%s) - withdrawal: %0.2f withdrawn from broker account "%s"' % (
+                '(%s) - withdrawal: %0.2f withdrawn from broker account "%s"'
+                % (
                     self.current_dt, amount, self.account_id
                 )
             )
@@ -339,7 +346,8 @@ class SimulatedBroker(Broker):
             self.open_orders[portfolio_id_str] = queue.Queue()
             if settings.PRINT_EVENTS:
                 print(
-                    '(%s) - portfolio creation: Portfolio "%s" created at broker "%s"' % (
+                    '(%s) - portfolio creation: Portfolio "%s" created at '
+                    'broker "%s"' % (
                         self.current_dt, portfolio_id_str, self.account_id
                     )
                 )
@@ -558,11 +566,11 @@ class SimulatedBroker(Broker):
         # Obtain a price for the asset, if no price then
         # raise a ValueError
         price_err_msg = (
-            "Could not obtain a latest market price for "
-            "Asset with ticker symbol '%s'. Order with ID '%s' was "
-            "not executed." % (
-                order.asset, order.order_id
-            )
+                "Could not obtain a latest market price for "
+                "Asset with ticker symbol '%s'. Order with ID '%s' was "
+                "not executed." % (
+                    order.asset, order.order_id
+                )
         )
         bid_ask = self.data_handler.get_asset_latest_bid_ask_price(
             dt, order.asset
@@ -592,7 +600,8 @@ class SimulatedBroker(Broker):
                 print(
                     "WARNING: Estimated transaction size of %0.2f exceeds "
                     "available cash of %0.2f. Transaction will still occur "
-                    "with a negative cash balance." % (est_total_cost, total_cash)
+                    "with a negative cash balance." % (
+                        est_total_cost, total_cash)
                 )
 
         # Create a transaction entity and update the portfolio
