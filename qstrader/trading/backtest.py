@@ -66,8 +66,8 @@ class BacktestTradingSession(TradingSession):
 
     def __init__(
         self,
-        start_dt,
-        end_dt,
+        start_dt: pd.Timestamp,
+        end_dt:pd.Timestamp,
         universe,
         alpha_model,
         risk_model=None,

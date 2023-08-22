@@ -1,18 +1,23 @@
+from __future__ import annotations
+
 import operator
 import os
 
 import pandas as pd
 import pytz
+from pandas import Timestamp
+from pandas._libs import NaTType
 
 from qstrader.alpha_model.alpha_model import AlphaModel
 from qstrader.alpha_model.fixed_signals import FixedSignalsAlphaModel
 from qstrader.asset.equity import Equity
 from qstrader.asset.universe.dynamic import DynamicUniverse
 from qstrader.asset.universe.static import StaticUniverse
-from qstrader.signals.momentum import MomentumSignal
-from qstrader.signals.signals_collection import SignalsCollection
+from qstrader.asset.universe.universe import Universe
 from qstrader.data.backtest_data_handler import BacktestDataHandler
 from qstrader.data.daily_bar_csv import CSVDailyBarDataSource
+from qstrader.signals.momentum import MomentumSignal
+from qstrader.signals.signals_collection import SignalsCollection
 from qstrader.statistics.tearsheet import TearsheetStatistics
 from qstrader.trading.backtest import BacktestTradingSession
 
@@ -20,8 +25,10 @@ from qstrader.trading.backtest import BacktestTradingSession
 class TopNMomentumAlphaModel(AlphaModel):
 
     def __init__(
-        self, signals, mom_lookback, mom_top_n, universe, data_handler
-    ):
+            self, signals: SignalsCollection, mom_lookback: int, mom_top_n: int,
+            universe: Universe,
+            data_handler: BacktestDataHandler
+    ) -> None:
         """
         Initialise the TopNMomentumAlphaModel
 
@@ -45,14 +52,14 @@ class TopNMomentumAlphaModel(AlphaModel):
         -------
         None
         """
-        self.signals = signals
-        self.mom_lookback = mom_lookback
-        self.mom_top_n = mom_top_n
-        self.universe = universe
-        self.data_handler = data_handler
+        self.signals: SignalsCollection = signals
+        self.mom_lookback: int = mom_lookback
+        self.mom_top_n: int = mom_top_n
+        self.universe: Universe = universe
+        self.data_handler: BacktestDataHandler = data_handler
 
     def _highest_momentum_asset(
-        self, dt
+            self, dt
     ):
         """
         Calculates the ordered list of highest performing momentum
@@ -71,7 +78,7 @@ class TopNMomentumAlphaModel(AlphaModel):
             restricted to the 'Top N'.
         """
         assets = self.signals['momentum'].assets
-        
+
         # Calculate the holding-period return momenta for each asset,
         # for the particular provided momentum lookback period
         all_momenta = {
@@ -84,15 +91,15 @@ class TopNMomentumAlphaModel(AlphaModel):
         # restricted by the provided number of desired assets to
         # trade per month
         return [
-            asset[0] for asset in sorted(
+                   asset[0] for asset in sorted(
                 all_momenta.items(),
                 key=operator.itemgetter(1),
                 reverse=True
             )
-        ][:self.mom_top_n]
+               ][:self.mom_top_n]
 
     def _generate_signals(
-        self, dt, weights
+            self, dt, weights
     ):
         """
         Calculate the highest performing momentum for each
@@ -118,7 +125,7 @@ class TopNMomentumAlphaModel(AlphaModel):
         return weights
 
     def __call__(
-        self, dt
+            self, dt
     ):
         """
         Calculates the signal weights for the top N
@@ -149,44 +156,55 @@ class TopNMomentumAlphaModel(AlphaModel):
 
 if __name__ == "__main__":
     # Duration of the backtest
-    start_dt = pd.Timestamp('1998-12-22 14:30:00', tz=pytz.UTC)
-    burn_in_dt = pd.Timestamp('1999-12-22 14:30:00', tz=pytz.UTC)
-    end_dt = pd.Timestamp('2020-12-31 23:59:00', tz=pytz.UTC)
+    start_dt: Timestamp | NaTType | NaTType = pd.Timestamp(
+        '1998-12-22 14:30:00', tz=pytz.UTC)
+    burn_in_dt: Timestamp | NaTType | NaTType = pd.Timestamp(
+        '1999-12-22 14:30:00', tz=pytz.UTC)
+    end_dt: Timestamp | NaTType | NaTType = pd.Timestamp('2020-12-31 23:59:00',
+                                                         tz=pytz.UTC)
 
     # Model parameters
-    mom_lookback = 126  # Six months worth of business days
-    mom_top_n = 3  # Number of assets to include at any one time
+    mom_lookback: int = 126  # Six months worth of business days
+    mom_top_n: int = 3  # Number of assets to include at any one time
 
     # Construct the symbols and assets necessary for the backtest
     # This utilises the SPDR US sector ETFs, all beginning with XL
-    strategy_symbols = ['XL%s' % sector for sector in "BCEFIKPUVY"]
-    assets = ['EQ:%s' % symbol for symbol in strategy_symbols]
+    strategy_symbols: list[str] = ['XL%s' % sector for sector in "BCEFIKPUVY"]
+    assets: list[str] = ['EQ:%s' % symbol for symbol in strategy_symbols]
 
     # As this is a dynamic universe of assets (XLC is added later)
     # we need to tell QSTrader when XLC can be included. This is
     # achieved using an asset dates dictionary
-    asset_dates = {asset: start_dt for asset in assets}
+    asset_dates: dict = {asset: start_dt for asset in assets}
     asset_dates['EQ:XLC'] = pd.Timestamp('2018-06-18 00:00:00', tz=pytz.UTC)
-    strategy_universe = DynamicUniverse(asset_dates)
+    strategy_universe: DynamicUniverse = DynamicUniverse(asset_dates)
 
     # To avoid loading all CSV files in the directory, set the
     # data source to load only those provided symbols
     csv_dir = os.environ.get('QSTRADER_CSV_DATA_DIR', '.')
-    strategy_data_source = CSVDailyBarDataSource(csv_dir, Equity, csv_symbols=strategy_symbols)
-    strategy_data_handler = BacktestDataHandler(strategy_universe, data_sources=[strategy_data_source])
+    strategy_data_source = CSVDailyBarDataSource(csv_dir=csv_dir,
+                                                 asset_type=Equity,
+                                                 csv_symbols=strategy_symbols)
+    strategy_data_handler: BacktestDataHandler = BacktestDataHandler(
+        universe=strategy_universe,
+        data_sources=[
+            strategy_data_source])
 
     # Generate the signals (in this case holding-period return based
     # momentum) used in the top-N momentum alpha model
-    momentum = MomentumSignal(start_dt, strategy_universe, lookbacks=[mom_lookback])
-    signals = SignalsCollection({'momentum': momentum}, strategy_data_handler)
+    momentum: MomentumSignal = MomentumSignal(start_dt, strategy_universe,
+                                              lookbacks=[mom_lookback])
+    signals: SignalsCollection = SignalsCollection({'momentum': momentum},
+                                                   strategy_data_handler)
 
     # Generate the alpha model instance for the top-N momentum alpha model
-    strategy_alpha_model = TopNMomentumAlphaModel(
-        signals, mom_lookback, mom_top_n, strategy_universe, strategy_data_handler
+    strategy_alpha_model: TopNMomentumAlphaModel = TopNMomentumAlphaModel(
+        signals, mom_lookback, mom_top_n, strategy_universe,
+        strategy_data_handler
     )
 
     # Construct the strategy backtest and run it
-    strategy_backtest = BacktestTradingSession(
+    strategy_backtest: BacktestTradingSession = BacktestTradingSession(
         start_dt,
         end_dt,
         strategy_universe,
@@ -201,16 +219,22 @@ if __name__ == "__main__":
     strategy_backtest.run()
 
     # Construct benchmark assets (buy & hold SPY)
-    benchmark_symbols = ['SPY']
-    benchmark_assets = ['EQ:SPY']
-    benchmark_universe = StaticUniverse(benchmark_assets)
-    benchmark_data_source = CSVDailyBarDataSource(csv_dir, Equity, csv_symbols=benchmark_symbols)
-    benchmark_data_handler = BacktestDataHandler(benchmark_universe, data_sources=[benchmark_data_source])
+    benchmark_symbols: list[str] = ['SPY']
+    benchmark_assets: list[str] = ['EQ:SPY']
+    benchmark_universe: StaticUniverse = StaticUniverse(benchmark_assets)
+    benchmark_data_source: CSVDailyBarDataSource = CSVDailyBarDataSource(
+        csv_dir, Equity,
+        csv_symbols=benchmark_symbols)
+    benchmark_data_handler: BacktestDataHandler = BacktestDataHandler(
+        benchmark_universe,
+        data_sources=[
+            benchmark_data_source])
 
     # Construct a benchmark Alpha Model that provides
     # 100% static allocation to the SPY ETF, with no rebalance
-    benchmark_alpha_model = FixedSignalsAlphaModel({'EQ:SPY': 1.0})
-    benchmark_backtest = BacktestTradingSession(
+    benchmark_alpha_model: FixedSignalsAlphaModel = FixedSignalsAlphaModel(
+        {'EQ:SPY': 1.0})
+    benchmark_backtest: BacktestTradingSession = BacktestTradingSession(
         burn_in_dt,
         end_dt,
         benchmark_universe,
@@ -223,7 +247,7 @@ if __name__ == "__main__":
     benchmark_backtest.run()
 
     # Performance Output
-    tearsheet = TearsheetStatistics(
+    tearsheet: TearsheetStatistics = TearsheetStatistics(
         strategy_equity=strategy_backtest.get_equity_curve(),
         benchmark_equity=benchmark_backtest.get_equity_curve(),
         title='US Sector Momentum - Top 3 Sectors'

@@ -4,6 +4,8 @@ import os
 import numpy as np
 import pandas as pd
 import pytz
+from qstrader.asset.asset import Asset
+
 from qstrader import settings
 
 
@@ -32,9 +34,10 @@ class CSVDailyBarDataSource(object):
         provided directory.
     """
 
-    def __init__(self, csv_dir, asset_type, adjust_prices=True, csv_symbols=None):
+    def __init__(self, csv_dir, asset_type: type[Asset], adjust_prices=True,
+                 csv_symbols=None):
         self.csv_dir = csv_dir
-        self.asset_type = asset_type
+        self.asset_type:type[Asset] = asset_type
         self.adjust_prices = adjust_prices
         self.csv_symbols = csv_symbols
 
@@ -149,7 +152,8 @@ class CSVDailyBarDataSource(object):
         if self.adjust_prices:
             if 'Adj Close' not in bar_df.columns:
                 raise ValueError(
-                    "Unable to locate Adjusted Close pricing column in CSV data file. "
+                    "Unable to locate Adjusted Close pricing column in CSV "
+                    "data file. "
                     "Prices cannot be adjusted. Exiting."
                 )
 
@@ -157,7 +161,8 @@ class CSVDailyBarDataSource(object):
             oc_df = bar_df.loc[:, ['Open', 'Close', 'Adj Close']]
 
             # Adjust opening prices
-            oc_df['Adj Open'] = (oc_df['Adj Close'] / oc_df['Close']) * oc_df['Open']
+            oc_df['Adj Open'] = (oc_df['Adj Close'] / oc_df['Close']) * oc_df[
+                'Open']
             oc_df = oc_df.loc[:, ['Adj Open', 'Adj Close']]
             oc_df.columns = ['Open', 'Close']
         else:
@@ -167,14 +172,17 @@ class CSVDailyBarDataSource(object):
         # appropriately timestamped
         seq_oc_df = oc_df.T.unstack(level=0).reset_index()
         seq_oc_df.columns = ['Date', 'Market', 'Price']
-        seq_oc_df.loc[seq_oc_df['Market'] == 'Open', 'Date'] += pd.Timedelta(hours=14, minutes=30)
-        seq_oc_df.loc[seq_oc_df['Market'] == 'Close', 'Date'] += pd.Timedelta(hours=21, minutes=00)
+        seq_oc_df.loc[seq_oc_df['Market'] == 'Open', 'Date'] += pd.Timedelta(
+            hours=14, minutes=30)
+        seq_oc_df.loc[seq_oc_df['Market'] == 'Close', 'Date'] += pd.Timedelta(
+            hours=21, minutes=00)
 
         # TODO: Unable to distinguish between Bid/Ask, implement later
         dp_df = seq_oc_df[['Date', 'Price']]
         dp_df['Bid'] = dp_df['Price']
         dp_df['Ask'] = dp_df['Price']
-        dp_df = dp_df.loc[:, ['Date', 'Bid', 'Ask']].fillna(method='ffill').set_index('Date').sort_index()
+        dp_df = dp_df.loc[:, ['Date', 'Bid', 'Ask']].fillna(
+            method='ffill').set_index('Date').sort_index()
         return dp_df
 
     def _convert_bars_into_bid_ask_dfs(self):
@@ -216,7 +224,8 @@ class CSVDailyBarDataSource(object):
         """
         bid_ask_df = self.asset_bid_ask_frames[asset]
         try:
-            bid = bid_ask_df.iloc[bid_ask_df.index.get_loc(dt, method='pad')]['Bid']
+            bid = bid_ask_df.iloc[bid_ask_df.index.get_loc(dt, method='pad')][
+                'Bid']
         except KeyError:  # Before start date
             return np.NaN
         return bid
@@ -240,7 +249,8 @@ class CSVDailyBarDataSource(object):
         """
         bid_ask_df = self.asset_bid_ask_frames[asset]
         try:
-            ask = bid_ask_df.iloc[bid_ask_df.index.get_loc(dt, method='pad')]['Ask']
+            ask = bid_ask_df.iloc[bid_ask_df.index.get_loc(dt, method='pad')][
+                'Ask']
         except KeyError:  # Before start date
             return np.NaN
         return ask
