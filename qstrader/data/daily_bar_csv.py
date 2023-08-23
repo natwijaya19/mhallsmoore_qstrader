@@ -1,14 +1,14 @@
 import functools
 import os
-import pathlib
-from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
 import pytz
-from qstrader.asset.asset import Asset
+from pandas import DataFrame
 
 from qstrader import settings
+from qstrader.asset.asset import Asset
 
 
 class CSVDailyBarDataSource(object):
@@ -36,17 +36,22 @@ class CSVDailyBarDataSource(object):
         provided directory.
     """
 
-    def __init__(self, csv_dir, asset_type: type[Asset], adjust_prices=True,
-                 csv_symbols=None):
-        self.csv_dir = csv_dir
-        self.asset_type:type[Asset] = asset_type
-        self.adjust_prices = adjust_prices
-        self.csv_symbols = csv_symbols
+    def __init__(
+        self,
+        csv_dir: str,
+        asset_type: type[Asset],
+        adjust_prices: bool = True,
+        csv_symbols: list[str] = None,
+    ):
+        self.csv_dir: str = csv_dir
+        self.asset_type: type[Asset] = asset_type
+        self.adjust_prices: bool = adjust_prices
+        self.csv_symbols: list[str] = csv_symbols
 
         self.asset_bar_frames = self._load_csvs_into_dfs()
         self.asset_bid_ask_frames = self._convert_bars_into_bid_ask_dfs()
 
-    def _obtain_asset_csv_files(self):
+    def _obtain_asset_csv_files(self) -> list[str]:
         """
         Obtain the list of all CSV filenames in the CSV directory.
 
@@ -55,12 +60,9 @@ class CSVDailyBarDataSource(object):
         `list[str]`
             The list of all CSV filenames.
         """
-        return [
-            file for file in os.listdir(self.csv_dir)
-            if file.endswith('.csv')
-        ]
+        return [file for file in os.listdir(self.csv_dir) if file.endswith(".csv")]
 
-    def _obtain_asset_symbol_from_filename(self, csv_file):
+    def _obtain_asset_symbol_from_filename(self, csv_file) -> str:
         """
         Return the QSTrader symbology for the asset.
 
@@ -76,9 +78,9 @@ class CSVDailyBarDataSource(object):
         `str`
             The QSTrader symbology of the asset. e.g. 'EQ:SPY'.
         """
-        return 'EQ:%s' % csv_file.replace('.csv', '')
+        return "EQ:%s" % csv_file.replace(".csv", "")
 
-    def _load_csv_into_df(self, csv_file):
+    def _load_csv_into_df(self, csv_file) -> pd.DataFrame:
         """
         Loads the CSV file into a Pandas DataFrame with dates parsed,
         sorted on datetime localised to UTC.
@@ -96,17 +98,15 @@ class CSVDailyBarDataSource(object):
 
         # csv_dir: Path = pathlib.Path(self.csv_dir)
         # file_path: Path = pathlib.Path(csv_dir, csv_file)
-        csv_df = pd.read_csv(
-            os.path.join(self.csv_dir, csv_file),
-            index_col='Date',
-            parse_dates=True
+        csv_df: DataFrame = pd.read_csv(
+            os.path.join(self.csv_dir, csv_file), index_col="Date", parse_dates=True
         ).sort_index()
 
         # Ensure all timestamps are set to UTC for consistency
         csv_df = csv_df.set_index(csv_df.index.tz_localize(pytz.UTC))
         return csv_df
 
-    def _load_csvs_into_dfs(self):
+    def _load_csvs_into_dfs(self) -> dict[str, pd.DataFrame]:
         """
         Load all CSVs in the CSV directory into Pandas DataFrames.
 
@@ -121,20 +121,21 @@ class CSVDailyBarDataSource(object):
         if self.csv_symbols is not None:
             # TODO/NOTE: This assumes existence of CSV symbols
             # within the provided directory.
-            csv_files = ['%s.csv' % symbol for symbol in self.csv_symbols]
+            csv_files = ["%s.csv" % symbol for symbol in self.csv_symbols]
         else:
             csv_files = self._obtain_asset_csv_files()
 
-        asset_frames = {}
+        asset_frames: dict[str, pd.DataFrame] = {}
+        csv_file: str
         for csv_file in csv_files:
-            asset_symbol = self._obtain_asset_symbol_from_filename(csv_file)
+            asset_symbol: str = self._obtain_asset_symbol_from_filename(csv_file)
             if settings.PRINT_EVENTS:
                 print("Loading CSV file for symbol '%s'..." % asset_symbol)
-            csv_df = self._load_csv_into_df(csv_file)
+            csv_df: DataFrame = self._load_csv_into_df(csv_file)
             asset_frames[asset_symbol] = csv_df
         return asset_frames
 
-    def _convert_bar_frame_into_bid_ask_df(self, bar_df):
+    def _convert_bar_frame_into_bid_ask_df(self, bar_df: pd.DataFrame) -> pd.DataFrame:
         """
         Converts the DataFrame from daily OHLCV 'bars' into a DataFrame
         of open and closing price timestamps.
@@ -155,7 +156,7 @@ class CSVDailyBarDataSource(object):
         """
         bar_df = bar_df.sort_index()
         if self.adjust_prices:
-            if 'Adj Close' not in bar_df.columns:
+            if "Adj Close" not in bar_df.columns:
                 raise ValueError(
                     "Unable to locate Adjusted Close pricing column in CSV "
                     "data file. "
@@ -163,34 +164,39 @@ class CSVDailyBarDataSource(object):
                 )
 
             # Restrict solely to the open/closing prices
-            oc_df = bar_df.loc[:, ['Open', 'Close', 'Adj Close']]
+            oc_df = bar_df.loc[:, ["Open", "Close", "Adj Close"]]
 
             # Adjust opening prices
-            oc_df['Adj Open'] = (oc_df['Adj Close'] / oc_df['Close']) * oc_df[
-                'Open']
-            oc_df = oc_df.loc[:, ['Adj Open', 'Adj Close']]
-            oc_df.columns = ['Open', 'Close']
+            oc_df["Adj Open"] = (oc_df["Adj Close"] / oc_df["Close"]) * oc_df["Open"]
+            oc_df = oc_df.loc[:, ["Adj Open", "Adj Close"]]
+            oc_df.columns = ["Open", "Close"]
         else:
-            oc_df = bar_df.loc[:, ['Open', 'Close']]
+            oc_df = bar_df.loc[:, ["Open", "Close"]]
 
         # Convert bars into separate rows for open/close prices
         # appropriately timestamped
         seq_oc_df = oc_df.T.unstack(level=0).reset_index()
-        seq_oc_df.columns = ['Date', 'Market', 'Price']
-        seq_oc_df.loc[seq_oc_df['Market'] == 'Open', 'Date'] += pd.Timedelta(
-            hours=14, minutes=30)
-        seq_oc_df.loc[seq_oc_df['Market'] == 'Close', 'Date'] += pd.Timedelta(
-            hours=21, minutes=00)
+        seq_oc_df.columns = ["Date", "Market", "Price"]
+        seq_oc_df.loc[seq_oc_df["Market"] == "Open", "Date"] += pd.Timedelta(
+            hours=14, minutes=30
+        )
+        seq_oc_df.loc[seq_oc_df["Market"] == "Close", "Date"] += pd.Timedelta(
+            hours=21, minutes=00
+        )
 
         # TODO: Unable to distinguish between Bid/Ask, implement later
-        dp_df = seq_oc_df[['Date', 'Price']]
-        dp_df['Bid'] = dp_df['Price']
-        dp_df['Ask'] = dp_df['Price']
-        dp_df = dp_df.loc[:, ['Date', 'Bid', 'Ask']].fillna(
-            method='ffill').set_index('Date').sort_index()
+        dp_df = seq_oc_df[["Date", "Price"]]
+        dp_df["Bid"] = dp_df["Price"]
+        dp_df["Ask"] = dp_df["Price"]
+        dp_df = (
+            dp_df.loc[:, ["Date", "Bid", "Ask"]]
+            .fillna(method="ffill")
+            .set_index("Date")
+            .sort_index()
+        )
         return dp_df
 
-    def _convert_bars_into_bid_ask_dfs(self):
+    def _convert_bars_into_bid_ask_dfs(self) -> dict[str, pd.DataFrame]:
         """
         Convert all of the daily OHLCV 'bar' based DataFrames into
         individually-timestamped open/closing price DataFrames.
@@ -202,16 +208,17 @@ class CSVDailyBarDataSource(object):
         """
         if settings.PRINT_EVENTS:
             print("Adjusting pricing in CSV files...")
-        asset_bid_ask_frames = {}
+        asset_bid_ask_frames: dict[str, pd.DataFrame] = {}
         for asset_symbol, bar_df in self.asset_bar_frames.items():
             if settings.PRINT_EVENTS:
                 print("Adjusting CSV file for symbol '%s'..." % asset_symbol)
-            asset_bid_ask_frames[asset_symbol] = \
-                self._convert_bar_frame_into_bid_ask_df(bar_df)
+            asset_bid_ask_frames[
+                asset_symbol
+            ] = self._convert_bar_frame_into_bid_ask_df(bar_df)
         return asset_bid_ask_frames
 
     @functools.lru_cache(maxsize=1024 * 1024)
-    def get_bid(self, dt, asset):
+    def get_bid(self, dt: pd.Timestamp, asset: str) -> float:
         """
         Obtain the bid price of an asset at the provided timestamp.
 
@@ -229,14 +236,13 @@ class CSVDailyBarDataSource(object):
         """
         bid_ask_df = self.asset_bid_ask_frames[asset]
         try:
-            bid = bid_ask_df.iloc[bid_ask_df.index.get_loc(dt, method='pad')][
-                'Bid']
+            bid = bid_ask_df.iloc[bid_ask_df.index.get_loc(dt, method="pad")]["Bid"]
         except KeyError:  # Before start date
             return np.NaN
         return bid
 
     @functools.lru_cache(maxsize=1024 * 1024)
-    def get_ask(self, dt, asset):
+    def get_ask(self, dt: pd.Timestamp, asset: str) -> float:
         """
         Obtain the ask price of an asset at the provided timestamp.
 
@@ -254,13 +260,17 @@ class CSVDailyBarDataSource(object):
         """
         bid_ask_df = self.asset_bid_ask_frames[asset]
         try:
-            ask = bid_ask_df.iloc[bid_ask_df.index.get_loc(dt, method='pad')][
-                'Ask']
+            ask = bid_ask_df.iloc[bid_ask_df.index.get_loc(dt, method="pad")]["Ask"]
         except KeyError:  # Before start date
             return np.NaN
         return ask
 
-    def get_assets_historical_closes(self, start_dt, end_dt, assets):
+    def get_assets_historical_closes(
+        self,
+        start_dt: pd.Timestamp,
+        end_dt: pd.Timestamp,
+        assets: list[str],
+    ) -> pd.DataFrame:
         """
         Obtain a multi-asset historical range of closing prices as a DataFrame,
         indexed by timestamp with asset symbols as columns.
@@ -279,13 +289,14 @@ class CSVDailyBarDataSource(object):
         `pd.DataFrame`
             The multi-asset closing prices DataFrame.
         """
-        close_series = []
+        close_series: list[Any] = []
+        asset: str
         for asset in assets:
             if asset in self.asset_bar_frames.keys():
-                asset_close_prices = self.asset_bar_frames[asset][['Close']]
+                asset_close_prices = self.asset_bar_frames[asset][["Close"]]
                 asset_close_prices.columns = [asset]
                 close_series.append(asset_close_prices)
 
-        prices_df = pd.concat(close_series, axis=1).dropna(how='all')
+        prices_df: DataFrame = pd.concat(close_series, axis=1).dropna(how="all")
         prices_df = prices_df.loc[start_dt:end_dt]
         return prices_df
