@@ -43,7 +43,8 @@ class Order(object):
         self.asset = asset
         self.quantity = quantity
         self.commission = commission
-        self.direction: int = np.copysign(1, self.quantity)
+
+        self.direction: int = np.copysign(1, self.quantity)  # 1 or -1
         self.order_id: str = self._set_or_generate_order_id(order_id)
 
     def _order_attribs_equal(self, other):

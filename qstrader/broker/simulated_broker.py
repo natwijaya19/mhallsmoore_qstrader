@@ -529,7 +529,7 @@ class SimulatedBroker(Broker):
             )
         return self.portfolios[portfolio_id].portfolio_to_dict()
 
-    def _execute_order(self, dt, portfolio_id, order):
+    def _execute_order(self, dt: pd.Timestamp, portfolio_id: str, order) -> None:
         """
         For a given portfolio ID string, create a Transaction instance from
         the provided Order and ensure the Portfolio is appropriately updated
@@ -557,9 +557,9 @@ class SimulatedBroker(Broker):
 
         # Calculate the consideration and total commission
         # based on the commission model
-        if order.direction > 0:
+        if order.direction > 0:  # Buy
             price = bid_ask[1]
-        else:
+        else:  # Sell
             price = bid_ask[0]
         consideration = round(price * order.quantity)
         total_commission = self.fee_model.calc_total_cost(
@@ -653,7 +653,9 @@ class SimulatedBroker(Broker):
         portfolio: str
         for portfolio in self.portfolios:
             for asset in self.portfolios[portfolio].pos_handler.positions:
-                mid_price: float | Any = self.data_handler.get_asset_latest_mid_price(dt, asset)
+                mid_price: float = self.data_handler.get_asset_latest_mid_price(
+                    dt, asset
+                )
                 self.portfolios[portfolio].update_market_value_of_asset(
                     asset, mid_price, self.current_dt
                 )

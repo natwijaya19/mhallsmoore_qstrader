@@ -231,7 +231,7 @@ class CSVDailyBarDataSource(object):
         return asset_bid_ask_frames
 
     @functools.lru_cache(maxsize=1024 * 1024)
-    def get_bid(self, dt, asset):
+    def get_bid(self, dt: pd.Timestamp, asset: str) -> float:
         """
         Obtain the bid price of an asset at the provided timestamp.
 
@@ -256,7 +256,7 @@ class CSVDailyBarDataSource(object):
         return bid
 
     @functools.lru_cache(maxsize=1024 * 1024)
-    def get_ask(self, dt, asset):
+    def get_ask(self, dt: pd.Timestamp, asset: str) -> float:
         """
         Obtain the ask price of an asset at the provided timestamp.
 
@@ -280,7 +280,12 @@ class CSVDailyBarDataSource(object):
             return np.NaN
         return ask
 
-    def get_assets_historical_closes(self, start_dt, end_dt, assets):
+    def get_assets_historical_closes(
+        self,
+        start_dt: pd.Timestamp,
+        end_dt: pd.Timestamp,
+        assets: list[str],
+    ) -> pd.DataFrame:
         """
         Obtain a multi-asset historical range of closing prices as a DataFrame,
         indexed by timestamp with asset symbols as columns.

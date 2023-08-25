@@ -1,13 +1,18 @@
-from typing import Tuple, Any
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
+
+from qstrader.asset.universe.universe import Universe
+from qstrader.data.daily_bar_csv import CSVDailyBarDataSource
 
 
 class BacktestDataHandler(object):
     """ """
 
-    def __init__(self, universe, data_sources=None):
+    def __init__(
+        self, universe: Universe, data_sources: list[CSVDailyBarDataSource] = None
+    ):
         self.universe = universe
         self.data_sources = data_sources
 
@@ -15,6 +20,7 @@ class BacktestDataHandler(object):
         """ """
         # TODO: Check for asset in Universe
         bid: float = np.NaN
+        ds: CSVDailyBarDataSource
         for ds in self.data_sources:
             try:
                 bid = ds.get_bid(dt, asset_symbol)
@@ -28,6 +34,7 @@ class BacktestDataHandler(object):
         """ """
         # TODO: Check for asset in Universe
         ask = np.NaN
+        ds: CSVDailyBarDataSource
         for ds in self.data_sources:
             try:
                 ask = ds.get_ask(dt, asset_symbol)
@@ -50,12 +57,11 @@ class BacktestDataHandler(object):
         bid: float = self.get_asset_latest_bid_price(dt, asset_symbol)
         return (bid, bid)
 
-    def get_asset_latest_mid_price(
-        self, dt: pd.Timestamp, asset_symbol: pd.Timestamp
-    ) -> float:
+    def get_asset_latest_mid_price(self, dt: pd.Timestamp, asset_symbol: str) -> float:
         """ """
-        bid_ask: tuple[float,float] = self.get_asset_latest_bid_ask_price(dt,
-                                                                asset_symbol)
+        bid_ask: tuple[float, float] = self.get_asset_latest_bid_ask_price(
+            dt, asset_symbol
+        )
         try:
             mid: float = (bid_ask[0] + bid_ask[1]) / 2.0
         except Exception:
@@ -96,7 +102,10 @@ class BacktestDataHandler(object):
         for ds in self.data_sources:
             try:
                 prices_df = ds.get_assets_historical_closes(
-                    start_dt, end_dt, asset_symbols, adjusted=adjusted
+                    start_dt,
+                    end_dt,
+                    asset_symbols,
+                    # adjusted=adjusted
                 )
                 if prices_df is not None:
                     return prices_df

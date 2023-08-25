@@ -398,7 +398,10 @@ class BacktestTradingSession(TradingSession):
             # Output the system event and timestamp
             ts: pd.Timestamp = event.ts
             # Take the yyyy-mm-dd portion of the timestamp
-            dt: pd.Timestamp = ts.replace(hour=0, minute=0, second=0, microsecond=0)
+            # dt: pd.Timestamp = ts.replace(hour=0, minute=0, second=0, microsecond=0)
+
+            # Use the full timestamp
+            dt: Timestamp | Timestamp = ts
             if settings.PRINT_EVENTS:
                 print("(%s) - %s" % (event.ts, event.event_type))
 
