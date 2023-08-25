@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 import os
+from typing import List
 
 import pandas as pd
+from pandas import Timestamp
 
 from qstrader import settings
 from qstrader.alpha_model.alpha_model import AlphaModel
@@ -13,7 +17,11 @@ from qstrader.data.backtest_data_handler import BacktestDataHandler
 from qstrader.data.daily_bar_csv import CSVDailyBarDataSource
 from qstrader.exchange.exchange import Exchange
 from qstrader.exchange.simulated_exchange import SimulatedExchange
+from qstrader.risk_model.risk_model import RiskModel
+from qstrader.signals.signals_collection import SignalsCollection
 from qstrader.simulation.daily_bday import DailyBusinessDaySimulationEngine
+from qstrader.simulation.event import SimulationEvent
+from qstrader.simulation.sim_engine import SimulationEngine
 from qstrader.system.qts import QuantTradingSystem
 from qstrader.system.rebalance.buy_and_hold import BuyAndHoldRebalance
 from qstrader.system.rebalance.daily import DailyRebalance
@@ -63,7 +71,8 @@ class BacktestTradingSession(TradingSession):
         Whether to invoke the long only order sizer or allow
         long/short leveraged portfolios. Defaults to long/short leveraged.
     fee_model : `FeeModel` class instance, optional
-        The optional FeeModel derived subclass to use for transaction cost estimates.
+        The optional FeeModel derived subclass to use for transaction cost
+        estimates.
     burn_in_dt : `pd.Timestamp`, optional
         The optional date provided to begin tracking strategy statistics,
         which is used for strategies requiring a period of data 'burn in'
@@ -75,18 +84,18 @@ class BacktestTradingSession(TradingSession):
         end_dt: pd.Timestamp,
         universe: Universe,
         alpha_model: AlphaModel,
-        risk_model=None,
-        signals=None,
+        risk_model: RiskModel = None,
+        signals: SignalsCollection = None,
         initial_cash: float = 1e6,
-        rebalance="weekly",
+        rebalance: str = "weekly",
         account_name: str = DEFAULT_ACCOUNT_NAME,
         portfolio_id: str = DEFAULT_PORTFOLIO_ID,
         portfolio_name: str = DEFAULT_PORTFOLIO_NAME,
         long_only: bool = False,
         fee_model: FeeModel = ZeroFeeModel(),
-        burn_in_dt=None,
+        burn_in_dt: pd.Timestamp = None,
         data_handler: BacktestDataHandler = None,
-        **kwargs
+        **kwargs,
     ):
         self.start_dt = start_dt
         self.end_dt = end_dt
@@ -105,8 +114,8 @@ class BacktestTradingSession(TradingSession):
 
         self.exchange: Exchange = self._create_exchange()
         self.data_handler: BacktestDataHandler = self._create_data_handler(data_handler)
-        self.broker = self._create_broker()
-        self.sim_engine = self._create_simulation_engine()
+        self.broker: SimulatedBroker = self._create_broker()
+        self.sim_engine: SimulationEngine = self._create_simulation_engine()
 
         if rebalance == "weekly":
             if "rebalance_weekday" in kwargs:
@@ -118,11 +127,13 @@ class BacktestTradingSession(TradingSession):
                     "keyword argument to the instantiation of "
                     "BacktestTradingSession, e.g. with 'WED'."
                 )
-        self.rebalance_schedule = self._create_rebalance_event_times()
+        self.rebalance_schedule: list[
+            Timestamp | Timestamp
+        ] = self._create_rebalance_event_times()
 
-        self.qts = self._create_quant_trading_system(**kwargs)
-        self.equity_curve = []
-        self.target_allocations = []
+        self.qts: QuantTradingSystem = self._create_quant_trading_system(**kwargs)
+        self.equity_curve: list = []
+        self.target_allocations: list = []
 
     def _is_rebalance_event(self, dt):
         """
@@ -380,8 +391,9 @@ class BacktestTradingSession(TradingSession):
         if settings.PRINT_EVENTS:
             print("Beginning backtest simulation...")
 
-        stats = {"target_allocations": []}
+        stats: dict[str, list[float]] = {"target_allocations": []}
 
+        event: SimulationEvent
         for event in self.sim_engine:
             # Output the system event and timestamp
             ts: pd.Timestamp = event.ts

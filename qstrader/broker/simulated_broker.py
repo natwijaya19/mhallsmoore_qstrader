@@ -1,8 +1,10 @@
 import queue
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
+from broker.portfolio.portfolio import Portfolio
 from qstrader import settings
 from qstrader.broker.broker import Broker
 from qstrader.broker.fee_model.fee_model import FeeModel
@@ -72,7 +74,7 @@ class SimulatedBroker(Broker):
         self.market_impact_model = None  # TODO: Implement
 
         self.cash_balances = self._set_cash_balances()
-        self.portfolios = self._set_initial_portfolios()
+        self.portfolios: dict[str, Portfolio] = self._set_initial_portfolios()
         self.open_orders: dict[str, queue.Queue] = self._set_initial_open_orders()
 
         if settings.PRINT_EVENTS:
@@ -171,7 +173,7 @@ class SimulatedBroker(Broker):
             cash_dict[self.base_currency] = self.initial_funds
         return cash_dict
 
-    def _set_initial_portfolios(self) -> dict:
+    def _set_initial_portfolios(self) -> dict[str, Portfolio]:
         """
         Set the appropriate initial portfolios dictionary.
 
@@ -180,7 +182,8 @@ class SimulatedBroker(Broker):
         `dict`
             The empty initial portfolio dictionary.
         """
-        return {}
+        portfolios_dictLdict: dict[str, Portfolio] = {}
+        return portfolios_dictLdict
 
     def _set_initial_open_orders(self) -> dict[str, queue.Queue]:
         """
@@ -299,8 +302,9 @@ class SimulatedBroker(Broker):
         """
         equity_dict = {}
         master_equity = 0.0
+        portfolio: Portfolio
         for portfolio in self.portfolios.values():
-            port_equity = self.get_portfolio_total_equity(portfolio.portfolio_id)
+            port_equity: float = self.get_portfolio_total_equity(portfolio.portfolio_id)
             equity_dict[portfolio.portfolio_id] = port_equity
             master_equity += port_equity
         equity_dict["master"] = master_equity
@@ -646,9 +650,10 @@ class SimulatedBroker(Broker):
         self.current_dt = dt
 
         # Update portfolio asset values
+        portfolio: str
         for portfolio in self.portfolios:
             for asset in self.portfolios[portfolio].pos_handler.positions:
-                mid_price = self.data_handler.get_asset_latest_mid_price(dt, asset)
+                mid_price: float | Any = self.data_handler.get_asset_latest_mid_price(dt, asset)
                 self.portfolios[portfolio].update_market_value_of_asset(
                     asset, mid_price, self.current_dt
                 )

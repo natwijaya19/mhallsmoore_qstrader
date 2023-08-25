@@ -21,7 +21,7 @@ class SMASignal(Signal):
     def __init__(self, start_dt, universe, lookbacks):
         super().__init__(start_dt, universe, lookbacks)
 
-    def _simple_moving_average(self, asset, lookback):
+    def _simple_moving_average(self, asset: str, lookback: int) -> float:
         """
         Calculate the 'trend' for the provided lookback
         period based on the simple moving average of the
@@ -39,9 +39,10 @@ class SMASignal(Signal):
         `float`
             The SMA value ('trend') for the period.
         """
-        return np.mean(self.buffers.prices['%s_%s' % (asset, lookback)])
+        mean_value: float = np.mean(self.buffers.prices["%s_%s" % (asset, lookback)])
+        return mean_value
 
-    def __call__(self, asset, lookback):
+    def __call__(self, asset: str, lookback: int) -> float:
         """
         Calculate the lookback-period trend
         for the asset.

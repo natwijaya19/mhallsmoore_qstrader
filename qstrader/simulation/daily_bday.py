@@ -70,7 +70,7 @@ class DailyBusinessDaySimulationEngine(SimulationEngine):
         )
         return days
 
-    def __iter__(self):
+    def __iter__(self) -> SimulationEvent:
         """
         Generate the daily timestamps and event information
         for pre-market, market open, market close and post-market.

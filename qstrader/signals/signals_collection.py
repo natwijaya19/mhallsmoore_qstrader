@@ -1,3 +1,10 @@
+from typing import List
+
+import pandas as pd
+from qstrader.signals.signal import Signal
+from signals.signal import Signal
+
+
 class SignalsCollection(object):
     """
     Provides a mechanism for aggregating all signals
@@ -17,7 +24,7 @@ class SignalsCollection(object):
         The data handler used to obtain pricing.
     """
 
-    def __init__(self, signals, data_handler):
+    def __init__(self, signals: dict[str, Signal], data_handler):
         self.signals = signals
         self.data_handler = data_handler
         self.warmup = 0  # Used for 'burn in'
@@ -38,7 +45,7 @@ class SignalsCollection(object):
         """
         return self.signals[signal]
 
-    def update(self, dt):
+    def update(self, dt: pd.Timestamp):
         """
         Updates the universe (if dynamic) for each signal as well
         as the pricing information for this timestamp.
@@ -50,13 +57,16 @@ class SignalsCollection(object):
         """
         # Ensure any new assets in a DynamicUniverse
         # are added to the signal
+        name: str
+        signal: Signal
         for name, signal in self.signals.items():
             self.signals[name].update_assets(dt)
 
         # Update all of the signals with new prices
         for name, signal in self.signals.items():
-            assets = signal.assets
+            assets: list[str] = signal.assets
+            asset: str
             for asset in assets:
-                price = self.data_handler.get_asset_latest_mid_price(dt, asset)
+                price: float = self.data_handler.get_asset_latest_mid_price(dt, asset)
                 self.signals[name].append(asset, price)
         self.warmup += 1

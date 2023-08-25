@@ -1,3 +1,5 @@
+from typing import Dict, List
+
 import pandas as pd
 
 from qstrader import settings
@@ -79,9 +81,9 @@ class PortfolioConstructionModel(object):
         `list[str]`
             The sorted full list of Asset symbol strings.
         """
-        broker_portfolio = self.broker.get_portfolio_as_dict(self.broker_portfolio_id)
-        broker_assets = list(broker_portfolio.keys())
-        universe_assets = self.universe.get_assets(dt)
+        broker_portfolio: dict[str, dict] = self.broker.get_portfolio_as_dict(self.broker_portfolio_id)
+        broker_assets: list[str] = list(broker_portfolio.keys())
+        universe_assets: list[str] = self.universe.get_assets(dt)
         return sorted(list(set(broker_assets).union(set(universe_assets))))
 
     def _create_zero_target_weight_vector(

@@ -1,3 +1,5 @@
+import pandas as pd
+
 from qstrader.portcon.optimiser.optimiser import PortfolioOptimiser
 
 
@@ -14,13 +16,12 @@ class FixedWeightPortfolioOptimiser(PortfolioOptimiser):
         TargetWeightGenerators.
     """
 
-    def __init__(
-        self,
-        data_handler=None
-    ):
+    def __init__(self, data_handler=None):
         self.data_handler = data_handler
 
-    def __call__(self, dt: pd.Timestamp, initial_weights: dict[str, float]):
+    def __call__(
+        self, dt: pd.Timestamp, initial_weights: dict[str, float]
+    ) -> dict[str, float]:
         """
         Produce the dictionary of target weight
         values for each of the Asset instances provided.

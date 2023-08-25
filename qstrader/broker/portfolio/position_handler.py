@@ -28,7 +28,7 @@ class PositionHandler(object):
             position = Position.open_from_transaction(transaction)
             self.positions[asset] = position
 
-        # If the position has zero quantity remove it
+        # If the position has zero quantity, remove it
         if self.positions[asset].net_quantity == 0:
             del self.positions[asset]
 

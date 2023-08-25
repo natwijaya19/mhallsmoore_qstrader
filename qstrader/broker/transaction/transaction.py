@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 
 class Transaction(object):
@@ -24,12 +25,12 @@ class Transaction(object):
 
     def __init__(
         self,
-        asset,
-        quantity,
-        dt,
-        price,
-        order_id,
-        commission=0.0
+        asset: str,
+        quantity: int,
+        dt: pd.Timestamp,
+        price: float,
+        order_id: str,
+        commission: float = 0.0,
     ):
         self.asset = asset
         self.quantity = quantity
@@ -49,12 +50,14 @@ class Transaction(object):
         `str`
             The string representation of the Transaction.
         """
-        return "%s(asset=%s, quantity=%s, dt=%s, " \
-            "price=%s, order_id=%s)" % (
-                type(self).__name__, self.asset,
-                self.quantity, self.dt,
-                self.price, self.order_id
-            )
+        return "%s(asset=%s, quantity=%s, dt=%s, " "price=%s, order_id=%s)" % (
+            type(self).__name__,
+            self.asset,
+            self.quantity,
+            self.dt,
+            self.price,
+            self.order_id,
+        )
 
     @property
     def cost_without_commission(self):
