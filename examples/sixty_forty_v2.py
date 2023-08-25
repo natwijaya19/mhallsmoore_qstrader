@@ -14,12 +14,12 @@ from qstrader.statistics.tearsheet import TearsheetStatistics
 from qstrader.trading.backtest import BacktestTradingSession
 
 if __name__ == "__main__":
-    start_dt: pd.Timestamp = pd.Timestamp("2003-09-30 14:30:00", tz=pytz.UTC)
+    start_dt: pd.Timestamp = pd.Timestamp("2008-09-30 14:30:00", tz=pytz.UTC)
     end_dt: pd.Timestamp = pd.Timestamp("2019-12-31 23:59:00", tz=pytz.UTC)
 
     # Construct the symbols and assets necessary for the backtest
     strategy_symbols: list[str] = ["SPY", "AGG"]
-    strategy_assets: list[str] = ["EQ:%s" % symbol for symbol in strategy_symbols]
+    strategy_assets: list[str] = [f"EQ:{symbol}" for symbol in strategy_symbols]
     strategy_universe: Universe = StaticUniverse(strategy_assets)
 
     # To avoid loading all CSV files in the directory, set the
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     )
 
     # Construct an Alpha Model that simply provides
-    # static allocations to a universe of assets
+    # static allocations to a universe of assets,
     # In this case 60% SPY ETF, 40% AGG ETF,
     # rebalanced at the end of each month
     strategy_alpha_model: FixedSignalsAlphaModel = FixedSignalsAlphaModel(
@@ -66,7 +66,7 @@ if __name__ == "__main__":
         benchmark_alpha_model,
         rebalance="buy_and_hold",
         long_only=True,
-        cash_buffer_percentage=0.01,
+        # cash_buffer_percentage=0.01,
         data_handler=data_handler,
     )
     benchmark_backtest.run()

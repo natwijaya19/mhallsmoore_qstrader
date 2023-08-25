@@ -17,8 +17,8 @@ class DynamicUniverse(Universe):
         Map of assets and their entry date.
     """
 
-    def __init__(self, asset_dates):
-        self.asset_dates = asset_dates
+    def __init__(self, asset_dates: dict[str, pd.Timestamp]) -> None:
+        self.asset_dates: dict[str, pd.Timestamp] = asset_dates
 
     def get_assets(self, dt: pd.Timestamp) -> list[str]:
         """
@@ -41,6 +41,7 @@ class DynamicUniverse(Universe):
             The list of Asset symbols in the static Universe.
         """
         return [
-            asset for asset, asset_date in self.asset_dates.items()
+            asset
+            for asset, asset_date in self.asset_dates.items()
             if asset_date is not None and dt >= asset_date
         ]

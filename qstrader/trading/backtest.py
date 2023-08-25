@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from typing import Any
 
 import pandas as pd
 
@@ -14,6 +15,7 @@ from qstrader.broker.fee_model.zero_fee_model import ZeroFeeModel
 from qstrader.broker.simulated_broker import SimulatedBroker
 from qstrader.data.backtest_data_handler import BacktestDataHandler
 from qstrader.data.daily_bar_csv import CSVDailyBarDataSource
+from qstrader.data.data_handler import DataHandler
 from qstrader.exchange.exchange import Exchange
 from qstrader.exchange.simulated_exchange import SimulatedExchange
 from qstrader.risk_model.risk_model import RiskModel
@@ -76,23 +78,23 @@ class BacktestTradingSession(TradingSession):
 
     def __init__(
         self,
-        start_dt: pd.Timestamp,
-        end_dt: pd.Timestamp,
-        universe: Universe,
-        alpha_model: AlphaModel,
-        risk_model: RiskModel = None,
-        signals: SignalsCollection = None,
-        initial_cash: float = 1e6,
-        rebalance: str = "weekly",
-        account_name: str = DEFAULT_ACCOUNT_NAME,
-        portfolio_id: str = DEFAULT_PORTFOLIO_ID,
-        portfolio_name: str = DEFAULT_PORTFOLIO_NAME,
-        long_only: bool = False,
-        fee_model: FeeModel = ZeroFeeModel(),
-        burn_in_dt: pd.Timestamp = None,
-        data_handler: BacktestDataHandler = None,
-        **kwargs,
-    ):
+            start_dt: pd.Timestamp,
+            end_dt: pd.Timestamp,
+            universe: Universe,
+            alpha_model: AlphaModel,
+            risk_model: RiskModel = None,
+            signals: SignalsCollection = None,
+            initial_cash: float = 1e6,
+            rebalance: str = "weekly",
+            account_name: str = DEFAULT_ACCOUNT_NAME,
+            portfolio_id: str = DEFAULT_PORTFOLIO_ID,
+            portfolio_name: str = DEFAULT_PORTFOLIO_NAME,
+            long_only: bool = False,
+            fee_model: FeeModel = ZeroFeeModel(),
+            burn_in_dt: pd.Timestamp = None,
+            data_handler: DataHandler = None,
+            **kwargs: dict[str, Any],
+    ) -> object:
         self.start_dt: pd.Timestamp = start_dt
         self.end_dt: pd.Timestamp = end_dt
         self.universe: Universe = universe

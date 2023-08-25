@@ -1,7 +1,8 @@
+import abc
 from abc import ABCMeta, abstractmethod
 
 
-class TradingSession(object):
+class TradingSession(abc.ABC):
     """
     Interface to a live or backtested trading session.
     """
@@ -10,6 +11,4 @@ class TradingSession(object):
 
     @abstractmethod
     def run(self):
-        raise NotImplementedError(
-            "Should implement run()"
-        )
+        raise NotImplementedError("Should implement run()")

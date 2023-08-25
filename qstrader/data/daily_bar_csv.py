@@ -9,9 +9,10 @@ from pandas import DataFrame
 
 from qstrader import settings
 from qstrader.asset.asset import Asset
+from qstrader.data.data_source import BarDataSource
 
 
-class CSVDailyBarDataSource(object):
+class CSVDailyBarDataSource(BarDataSource):
     """
     Encapsulates loading, preparation and querying of CSV files of
     daily 'bar' OHLCV data. The CSV files are converted into a intraday
@@ -120,8 +121,9 @@ class CSVDailyBarDataSource(object):
             print("Loading CSV files into DataFrames...")
         if self.csv_symbols is not None:
             # TODO/NOTE: This assumes existence of CSV symbols
+
             # within the provided directory.
-            csv_files = ["%s.csv" % symbol for symbol in self.csv_symbols]
+            csv_files = [f"{symbol}.csv" for symbol in self.csv_symbols]
         else:
             csv_files = self._obtain_asset_csv_files()
 
@@ -164,22 +166,32 @@ class CSVDailyBarDataSource(object):
                 )
 
             # Restrict solely to the open/closing prices
-            oc_df = bar_df.loc[:, ["Open", "Close", "Adj Close"]]
+            oc_df: pd.DataFrame = bar_df.loc[:, ["Open", "Close", "Adj Close"]]
 
             # Adjust opening prices
             oc_df["Adj Open"] = (oc_df["Adj Close"] / oc_df["Close"]) * oc_df["Open"]
             oc_df = oc_df.loc[:, ["Adj Open", "Adj Close"]]
+
+            # Rename for consistency with non-adjusted prices
             oc_df.columns = ["Open", "Close"]
         else:
             oc_df = bar_df.loc[:, ["Open", "Close"]]
 
         # Convert bars into separate rows for open/close prices
         # appropriately timestamped
-        seq_oc_df = oc_df.T.unstack(level=0).reset_index()
+        seq_oc_df: DataFrame = oc_df.T.unstack(level=0).reset_index()
         seq_oc_df.columns = ["Date", "Market", "Price"]
+
+        # TODO: This is a hack to get around the fact that the CSV
+        # files are in US Eastern time, but the timestamps are
+        # UTC. This needs to be fixed in the CSV files themselves.
         seq_oc_df.loc[seq_oc_df["Market"] == "Open", "Date"] += pd.Timedelta(
             hours=14, minutes=30
         )
+
+        # TODO: This is a hack to get around the fact that the CSV
+        # files are in US Eastern time, but the timestamps are
+        # UTC. This needs to be fixed in the CSV files themselves.
         seq_oc_df.loc[seq_oc_df["Market"] == "Close", "Date"] += pd.Timedelta(
             hours=21, minutes=00
         )
@@ -198,7 +210,7 @@ class CSVDailyBarDataSource(object):
 
     def _convert_bars_into_bid_ask_dfs(self) -> dict[str, pd.DataFrame]:
         """
-        Convert all of the daily OHLCV 'bar' based DataFrames into
+        Convert all the daily OHLCV 'bar' based DataFrames into
         individually-timestamped open/closing price DataFrames.
 
         Returns
@@ -209,6 +221,8 @@ class CSVDailyBarDataSource(object):
         if settings.PRINT_EVENTS:
             print("Adjusting pricing in CSV files...")
         asset_bid_ask_frames: dict[str, pd.DataFrame] = {}
+        asset_symbol: str
+        bar_df: DataFrame
         for asset_symbol, bar_df in self.asset_bar_frames.items():
             if settings.PRINT_EVENTS:
                 print("Adjusting CSV file for symbol '%s'..." % asset_symbol)
@@ -234,9 +248,10 @@ class CSVDailyBarDataSource(object):
         `float`
             The bid price.
         """
-        bid_ask_df = self.asset_bid_ask_frames[asset]
+        bid_ask_df: DataFrame = self.asset_bid_ask_frames[asset]
         try:
-            bid = bid_ask_df.iloc[bid_ask_df.index.get_loc(dt, method="pad")]["Bid"]
+            dt_location: int = bid_ask_df.index.get_loc(dt)
+            bid: float = bid_ask_df.iloc[dt_location]["Bid"]
         except KeyError:  # Before start date
             return np.NaN
         return bid
@@ -258,9 +273,10 @@ class CSVDailyBarDataSource(object):
         `float`
             The ask price.
         """
-        bid_ask_df = self.asset_bid_ask_frames[asset]
+        bid_ask_df: DataFrame = self.asset_bid_ask_frames[asset]
         try:
-            ask = bid_ask_df.iloc[bid_ask_df.index.get_loc(dt, method="pad")]["Ask"]
+            dt_position: int = bid_ask_df.index.get_loc(dt)
+            ask: float = bid_ask_df.iloc[dt_position]["Ask"]
         except KeyError:  # Before start date
             return np.NaN
         return ask
