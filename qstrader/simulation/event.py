@@ -1,3 +1,6 @@
+import pandas as pd
+
+
 class SimulationEvent(object):
     """
     Stores a timestamp and event type string associated with
@@ -11,7 +14,7 @@ class SimulationEvent(object):
         The event type string.
     """
 
-    def __init__(self, ts, event_type):
+    def __init__(self, ts: pd.Timestamp, event_type: str):
         self.ts = ts
         self.event_type = event_type
 

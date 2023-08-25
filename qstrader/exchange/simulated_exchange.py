@@ -1,4 +1,9 @@
-import datetime
+from __future__ import annotations
+
+from datetime import datetime, time
+
+import pandas as pd
+import pytz
 
 from qstrader.exchange.exchange import Exchange
 
@@ -18,15 +23,27 @@ class SimulatedExchange(Exchange):
         The starting time of the simulated exchange.
     """
 
-    def __init__(self, start_dt):
+    # def __init__(self, start_dt: pd.Timestamp | datetime) -> None:
+    #     self.start_dt = start_dt
+    #
+    #     # TODO: Eliminate hardcoding of NYSE
+    #     # TODO: Make these timezone-aware
+    #     self.open_dt = datetime.time(14, 30)
+    #     self.close_dt = datetime.time(21, 00)
+
+    def __init__(self, start_dt: pd.Timestamp ) -> None:
         self.start_dt = start_dt
 
-        # TODO: Eliminate hardcoding of NYSE
-        # TODO: Make these timezone-aware
-        self.open_dt = datetime.time(14, 30)
-        self.close_dt = datetime.time(21, 00)
+        # Set the time zone for the exchange
+        exchange_timezone = pytz.timezone("America/New_York")
 
-    def is_open_at_datetime(self, dt):
+        # Set the open and close times in the exchange time zone
+        self.open_dt = time(14, 30)
+        self.close_dt = time(21, 0)
+
+
+
+    def is_open_at_datetime(self, dt: pd.Timestamp) -> bool:
         """
         Check if the SimulatedExchange is open at a particular
         provided pandas Timestamp.
@@ -50,3 +67,5 @@ class SimulatedExchange(Exchange):
         if dt.weekday() > 4:
             return False
         return self.open_dt <= dt.time() and dt.time() < self.close_dt
+
+

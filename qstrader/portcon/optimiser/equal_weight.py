@@ -1,3 +1,5 @@
+import pandas as pd
+
 from qstrader.portcon.optimiser.optimiser import PortfolioOptimiser
 
 
@@ -18,15 +20,11 @@ class EqualWeightPortfolioOptimiser(PortfolioOptimiser):
         PortfolioOptimisers.
     """
 
-    def __init__(
-        self,
-        scale=1.0,
-        data_handler=None
-    ):
+    def __init__(self, scale=1.0, data_handler=None):
         self.scale = scale
         self.data_handler = data_handler
 
-    def __call__(self, dt, initial_weights):
+    def __call__(self, dt: pd.Timestamp, initial_weights: dict[str, float]):
         """
         Produce the dictionary of single fixed scalar target weight
         values for each of the Asset instances provided.

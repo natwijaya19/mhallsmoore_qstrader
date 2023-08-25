@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import uuid
 
 import numpy as np
+import pandas as pd
 
 
 class Order(object):
@@ -29,19 +32,19 @@ class Order(object):
 
     def __init__(
         self,
-        dt,
-        asset,
-        quantity,
+        dt: pd.Timestamp,
+        asset: str,
+        quantity: int,
         commission=0.0,
-        order_id=None
+        order_id: int | str = None,
     ):
         self.created_dt = dt
         self.cur_dt = dt
         self.asset = asset
         self.quantity = quantity
         self.commission = commission
-        self.direction = np.copysign(1, self.quantity)
-        self.order_id = self._set_or_generate_order_id(order_id)
+        self.direction: int = np.copysign(1, self.quantity)
+        self.order_id: str = self._set_or_generate_order_id(order_id)
 
     def _order_attribs_equal(self, other):
         """
@@ -85,13 +88,18 @@ class Order(object):
         """
         return (
             "Order(dt='%s', asset='%s', quantity=%s, "
-            "commission=%s, direction=%s, order_id=%s)" % (
-                self.created_dt, self.asset, self.quantity,
-                self.commission, self.direction, self.order_id
+            "commission=%s, direction=%s, order_id=%s)"
+            % (
+                self.created_dt,
+                self.asset,
+                self.quantity,
+                self.commission,
+                self.direction,
+                self.order_id,
             )
         )
 
-    def _set_or_generate_order_id(self, order_id=None):
+    def _set_or_generate_order_id(self, order_id: Order = None) -> str:
         """
         Sets or generates a unique order ID for the order, using a UUID.
 

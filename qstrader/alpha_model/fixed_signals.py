@@ -17,10 +17,7 @@ class FixedSignalsAlphaModel(AlphaModel):
     """
 
     def __init__(
-        self,
-        signal_weights,
-        universe=None,
-        data_handler=None
+        self, signal_weights: dict[str, float], universe=None, data_handler=None
     ):
         self.signal_weights = signal_weights
         self.universe = universe

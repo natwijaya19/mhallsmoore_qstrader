@@ -1,4 +1,8 @@
+from __future__ import annotations
+
 from abc import ABCMeta, abstractmethod
+
+import pandas as pd
 
 
 class Rebalance(object):
@@ -9,8 +13,9 @@ class Rebalance(object):
 
     __metaclass__ = ABCMeta
 
+    def __init__(self):
+        self.rebalances: list[pd.Timestamp] | None = None
+
     @abstractmethod
     def output_rebalances(self):
-        raise NotImplementedError(
-            "Should implement output_rebalances()"
-        )
+        raise NotImplementedError("Should implement output_rebalances()")

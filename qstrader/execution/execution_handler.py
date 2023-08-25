@@ -1,3 +1,10 @@
+from typing import List
+
+import pandas as pd
+
+from qstrader.execution.order import Order
+
+
 class ExecutionHandler(object):
     """
     Handles the execution of a list of Orders output by the
@@ -29,7 +36,7 @@ class ExecutionHandler(object):
         universe,
         submit_orders=False,
         execution_algo=None,
-        data_handler=None
+        data_handler=None,
     ):
         self.broker = broker
         self.broker_portfolio_id = broker_portfolio_id
@@ -57,7 +64,7 @@ class ExecutionHandler(object):
         """
         return self.execution_algo(dt, rebalance_orders)
 
-    def __call__(self, dt, rebalance_orders):
+    def __call__(self, dt: pd.Timestamp, rebalance_orders: list[Order]):
         """
         Take the list of rebalanced Orders generated from the
         portfolio construction process and execute them at the
@@ -74,12 +81,13 @@ class ExecutionHandler(object):
         -------
         `None`
         """
-        final_orders = self._apply_execution_algo_to_rebalances(
+        final_orders: list[Order] = self._apply_execution_algo_to_rebalances(
             dt, rebalance_orders
         )
 
         # If order submission is specified then send the
         # individual order items to the Broker instance
         if self.submit_orders:
+            order: Order
             for order in final_orders:
                 self.broker.submit_order(self.broker_portfolio_id, order)

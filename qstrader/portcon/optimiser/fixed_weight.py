@@ -20,7 +20,7 @@ class FixedWeightPortfolioOptimiser(PortfolioOptimiser):
     ):
         self.data_handler = data_handler
 
-    def __call__(self, dt, initial_weights):
+    def __call__(self, dt: pd.Timestamp, initial_weights: dict[str, float]):
         """
         Produce the dictionary of target weight
         values for each of the Asset instances provided.

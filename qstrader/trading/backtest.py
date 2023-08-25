@@ -2,24 +2,29 @@ import os
 
 import pandas as pd
 
+from qstrader import settings
+from qstrader.alpha_model.alpha_model import AlphaModel
 from qstrader.asset.equity import Equity
-from qstrader.broker.simulated_broker import SimulatedBroker
+from qstrader.asset.universe.universe import Universe
+from qstrader.broker.fee_model.fee_model import FeeModel
 from qstrader.broker.fee_model.zero_fee_model import ZeroFeeModel
+from qstrader.broker.simulated_broker import SimulatedBroker
 from qstrader.data.backtest_data_handler import BacktestDataHandler
 from qstrader.data.daily_bar_csv import CSVDailyBarDataSource
+from qstrader.exchange.exchange import Exchange
 from qstrader.exchange.simulated_exchange import SimulatedExchange
 from qstrader.simulation.daily_bday import DailyBusinessDaySimulationEngine
 from qstrader.system.qts import QuantTradingSystem
 from qstrader.system.rebalance.buy_and_hold import BuyAndHoldRebalance
 from qstrader.system.rebalance.daily import DailyRebalance
 from qstrader.system.rebalance.end_of_month import EndOfMonthRebalance
+from qstrader.system.rebalance.rebalance import Rebalance
 from qstrader.system.rebalance.weekly import WeeklyRebalance
 from qstrader.trading.trading_session import TradingSession
-from qstrader import settings
 
-DEFAULT_ACCOUNT_NAME = 'Backtest Simulated Broker Account'
-DEFAULT_PORTFOLIO_ID = '000001'
-DEFAULT_PORTFOLIO_NAME = 'Backtest Simulated Broker Portfolio'
+DEFAULT_ACCOUNT_NAME: str = "Backtest Simulated Broker Account"
+DEFAULT_PORTFOLIO_ID: str = "000001"
+DEFAULT_PORTFOLIO_NAME: str = "Backtest Simulated Broker Portfolio"
 
 
 class BacktestTradingSession(TradingSession):
@@ -67,20 +72,20 @@ class BacktestTradingSession(TradingSession):
     def __init__(
         self,
         start_dt: pd.Timestamp,
-        end_dt:pd.Timestamp,
-        universe,
-        alpha_model,
+        end_dt: pd.Timestamp,
+        universe: Universe,
+        alpha_model: AlphaModel,
         risk_model=None,
         signals=None,
-        initial_cash=1e6,
-        rebalance='weekly',
-        account_name=DEFAULT_ACCOUNT_NAME,
-        portfolio_id=DEFAULT_PORTFOLIO_ID,
-        portfolio_name=DEFAULT_PORTFOLIO_NAME,
-        long_only=False,
-        fee_model=ZeroFeeModel(),
+        initial_cash: float = 1e6,
+        rebalance="weekly",
+        account_name: str = DEFAULT_ACCOUNT_NAME,
+        portfolio_id: str = DEFAULT_PORTFOLIO_ID,
+        portfolio_name: str = DEFAULT_PORTFOLIO_NAME,
+        long_only: bool = False,
+        fee_model: FeeModel = ZeroFeeModel(),
         burn_in_dt=None,
-        data_handler=None,
+        data_handler: BacktestDataHandler = None,
         **kwargs
     ):
         self.start_dt = start_dt
@@ -98,14 +103,14 @@ class BacktestTradingSession(TradingSession):
         self.fee_model = fee_model
         self.burn_in_dt = burn_in_dt
 
-        self.exchange = self._create_exchange()
-        self.data_handler = self._create_data_handler(data_handler)
+        self.exchange: Exchange = self._create_exchange()
+        self.data_handler: BacktestDataHandler = self._create_data_handler(data_handler)
         self.broker = self._create_broker()
         self.sim_engine = self._create_simulation_engine()
 
-        if rebalance == 'weekly':
-            if 'rebalance_weekday' in kwargs:
-                self.rebalance_weekday = kwargs['rebalance_weekday']
+        if rebalance == "weekly":
+            if "rebalance_weekday" in kwargs:
+                self.rebalance_weekday = kwargs["rebalance_weekday"]
             else:
                 raise ValueError(
                     "Rebalance frequency was set to 'weekly' but no specific "
@@ -136,7 +141,7 @@ class BacktestTradingSession(TradingSession):
         """
         return dt in self.rebalance_schedule
 
-    def _create_exchange(self):
+    def _create_exchange(self) -> SimulatedExchange:
         """
         Generates a simulated exchange instance used for
         market hours and holiday calendar checks.
@@ -148,7 +153,7 @@ class BacktestTradingSession(TradingSession):
         """
         return SimulatedExchange(self.start_dt)
 
-    def _create_data_handler(self, data_handler):
+    def _create_data_handler(self, data_handler) -> BacktestDataHandler:
         """
         Creates a DataHandler instance to load the asset pricing data
         used within the backtest.
@@ -170,7 +175,7 @@ class BacktestTradingSession(TradingSession):
             return data_handler
 
         try:
-            os.environ['QSTRADER_CSV_DATA_DIR']
+            os.environ["QSTRADER_CSV_DATA_DIR"]
         except KeyError:
             if settings.PRINT_EVENTS:
                 print(
@@ -180,19 +185,17 @@ class BacktestTradingSession(TradingSession):
                     "it is strongly recommended that a QSTRADER_CSV_DATA_DIR environment "
                     "variable is set for future backtests."
                 )
-            csv_dir = '.'
+            csv_dir = "."
         else:
-            csv_dir = os.environ.get('QSTRADER_CSV_DATA_DIR')
+            csv_dir = os.environ.get("QSTRADER_CSV_DATA_DIR")
 
         # TODO: Only equities are supported by QSTrader for now.
         data_source = CSVDailyBarDataSource(csv_dir, Equity)
 
-        data_handler = BacktestDataHandler(
-            self.universe, data_sources=[data_source]
-        )
+        data_handler = BacktestDataHandler(self.universe, data_sources=[data_source])
         return data_handler
 
-    def _create_broker(self):
+    def _create_broker(self) -> SimulatedBroker:
         """
         Create the SimulatedBroker with an appropriate default
         portfolio identifiers.
@@ -208,13 +211,13 @@ class BacktestTradingSession(TradingSession):
             self.data_handler,
             account_id=self.account_name,
             initial_funds=self.initial_cash,
-            fee_model=self.fee_model
+            fee_model=self.fee_model,
         )
         broker.create_portfolio(self.portfolio_id, self.portfolio_name)
         broker.subscribe_funds_to_portfolio(self.portfolio_id, self.initial_cash)
         return broker
 
-    def _create_simulation_engine(self):
+    def _create_simulation_engine(self) -> DailyBusinessDaySimulationEngine:
         """
         Create a simulation engine instance to generate the events
         used for the quant trading algorithm to act upon.
@@ -230,7 +233,7 @@ class BacktestTradingSession(TradingSession):
             self.start_dt, self.end_dt, pre_market=False, post_market=False
         )
 
-    def _create_rebalance_event_times(self):
+    def _create_rebalance_event_times(self) -> list[pd.Timestamp]:
         """
         Creates the list of rebalance timestamps used to determine when
         to execute the quant trading strategy throughout the backtest.
@@ -240,17 +243,17 @@ class BacktestTradingSession(TradingSession):
         `List[pd.Timestamp]`
             The list of rebalance timestamps.
         """
-        if self.rebalance == 'buy_and_hold':
+
+        rebalancer: Rebalance
+        if self.rebalance == "buy_and_hold":
             rebalancer = BuyAndHoldRebalance(self.start_dt)
-        elif self.rebalance == 'daily':
-            rebalancer = DailyRebalance(
-                self.start_dt, self.end_dt
-            )
-        elif self.rebalance == 'weekly':
+        elif self.rebalance == "daily":
+            rebalancer = DailyRebalance(self.start_dt, self.end_dt)
+        elif self.rebalance == "weekly":
             rebalancer = WeeklyRebalance(
                 self.start_dt, self.end_dt, self.rebalance_weekday
             )
-        elif self.rebalance == 'end_of_month':
+        elif self.rebalance == "end_of_month":
             rebalancer = EndOfMonthRebalance(self.start_dt, self.end_dt)
         else:
             raise ValueError(
@@ -258,7 +261,7 @@ class BacktestTradingSession(TradingSession):
             )
         return rebalancer.rebalances
 
-    def _create_quant_trading_system(self, **kwargs):
+    def _create_quant_trading_system(self, **kwargs) -> QuantTradingSystem:
         """
         Creates the quantitative trading system with the provided
         alpha model.
@@ -272,12 +275,12 @@ class BacktestTradingSession(TradingSession):
             The quantitative trading system.
         """
         if self.long_only:
-            if 'cash_buffer_percentage' not in kwargs:
+            if "cash_buffer_percentage" not in kwargs:
                 raise ValueError(
-                    'Long only portfolio specified for Quant Trading System '
-                    'but no cash buffer percentage supplied.'
+                    "Long only portfolio specified for Quant Trading System "
+                    "but no cash buffer percentage supplied."
                 )
-            cash_buffer_percentage = kwargs['cash_buffer_percentage']
+            cash_buffer_percentage = kwargs["cash_buffer_percentage"]
 
             qts = QuantTradingSystem(
                 self.universe,
@@ -288,15 +291,15 @@ class BacktestTradingSession(TradingSession):
                 self.risk_model,
                 long_only=self.long_only,
                 cash_buffer_percentage=cash_buffer_percentage,
-                submit_orders=True
+                submit_orders=True,
             )
         else:
-            if 'gross_leverage' not in kwargs:
+            if "gross_leverage" not in kwargs:
                 raise ValueError(
-                    'Long/short leveraged portfolio specified for Quant '
-                    'Trading System but no gross leverage percentage supplied.'
+                    "Long/short leveraged portfolio specified for Quant "
+                    "Trading System but no gross leverage percentage supplied."
                 )
-            gross_leverage = kwargs['gross_leverage']
+            gross_leverage = kwargs["gross_leverage"]
 
             qts = QuantTradingSystem(
                 self.universe,
@@ -307,12 +310,12 @@ class BacktestTradingSession(TradingSession):
                 self.risk_model,
                 long_only=self.long_only,
                 gross_leverage=gross_leverage,
-                submit_orders=True
+                submit_orders=True,
             )
 
         return qts
 
-    def _update_equity_curve(self, dt):
+    def _update_equity_curve(self, dt: pd.Timestamp):
         """
         Update the equity curve values.
 
@@ -321,9 +324,7 @@ class BacktestTradingSession(TradingSession):
         dt : `pd.Timestamp`
             The time at which the total account equity is obtained.
         """
-        self.equity_curve.append(
-            (dt, self.broker.get_account_total_equity()["master"])
-        )
+        self.equity_curve.append((dt, self.broker.get_account_total_equity()["master"]))
 
     def output_holdings(self):
         """
@@ -331,7 +332,7 @@ class BacktestTradingSession(TradingSession):
         """
         self.broker.portfolios[self.portfolio_id].holdings_to_console()
 
-    def get_equity_curve(self):
+    def get_equity_curve(self) -> pd.DataFrame:
         """
         Returns the equity curve as a Pandas DataFrame.
 
@@ -341,12 +342,12 @@ class BacktestTradingSession(TradingSession):
             The datetime-indexed equity curve of the strategy.
         """
         equity_df = pd.DataFrame(
-            self.equity_curve, columns=['Date', 'Equity']
-        ).set_index('Date')
+            self.equity_curve, columns=["Date", "Equity"]
+        ).set_index("Date")
         equity_df.index = equity_df.index.date
         return equity_df
 
-    def get_target_allocations(self):
+    def get_target_allocations(self) -> pd.DataFrame:
         """
         Returns the target allocations as a Pandas DataFrame
         utilising the same index as the equity curve with
@@ -358,14 +359,14 @@ class BacktestTradingSession(TradingSession):
             The datetime-indexed target allocations of the strategy.
         """
         equity_curve = self.get_equity_curve()
-        alloc_df = pd.DataFrame(self.target_allocations).set_index('Date')
+        alloc_df = pd.DataFrame(self.target_allocations).set_index("Date")
         alloc_df.index = alloc_df.index.date
-        alloc_df = alloc_df.reindex(index=equity_curve.index, method='ffill')
+        alloc_df = alloc_df.reindex(index=equity_curve.index, method="ffill")
         if self.burn_in_dt is not None:
-            alloc_df = alloc_df[self.burn_in_dt:]
+            alloc_df = alloc_df[self.burn_in_dt :]
         return alloc_df
 
-    def run(self, results=False):
+    def run(self, results: bool = False) -> None:
         """
         Execute the simulation engine by iterating over all
         simulation events, rebalancing the quant trading
@@ -379,11 +380,13 @@ class BacktestTradingSession(TradingSession):
         if settings.PRINT_EVENTS:
             print("Beginning backtest simulation...")
 
-        stats = {'target_allocations': []}
+        stats = {"target_allocations": []}
 
         for event in self.sim_engine:
             # Output the system event and timestamp
-            dt = event.ts
+            ts: pd.Timestamp = event.ts
+            # Take the yyyy-mm-dd portion of the timestamp
+            dt: pd.Timestamp = ts.replace(hour=0, minute=0, second=0, microsecond=0)
             if settings.PRINT_EVENTS:
                 print("(%s) - %s" % (event.ts, event.event_type))
 
@@ -400,18 +403,12 @@ class BacktestTradingSession(TradingSession):
                 if dt >= self.burn_in_dt:
                     if self._is_rebalance_event(dt):
                         if settings.PRINT_EVENTS:
-                            print(
-                                "(%s) - trading logic "
-                                "and rebalance" % event.ts
-                            )
+                            print("(%s) - trading logic " "and rebalance" % event.ts)
                         self.qts(dt, stats=stats)
             else:
                 if self._is_rebalance_event(dt):
                     if settings.PRINT_EVENTS:
-                        print(
-                            "(%s) - trading logic "
-                            "and rebalance" % event.ts
-                        )
+                        print("(%s) - trading logic " "and rebalance" % event.ts)
                     self.qts(dt, stats=stats)
 
             # Out of market hours we want a daily
@@ -424,7 +421,7 @@ class BacktestTradingSession(TradingSession):
                 else:
                     self._update_equity_curve(dt)
 
-        self.target_allocations = stats['target_allocations']
+        self.target_allocations = stats["target_allocations"]
 
         # At the end of the simulation output the
         # portfolio holdings if desired

@@ -8,22 +8,22 @@ def aggregate_returns(returns, convert_to):
     """
     Aggregates returns by day, week, month, or year.
     """
+
     def cumulate_returns(x):
         return np.exp(np.log(1 + x).cumsum())[-1] - 1
 
-    if convert_to == 'weekly':
+    if convert_to == "weekly":
         return returns.groupby(
-            [lambda x: x.year,
-             lambda x: x.month,
-             lambda x: x.isocalendar()[1]]).apply(cumulate_returns)
-    elif convert_to == 'monthly':
-        return returns.groupby(
-            [lambda x: x.year, lambda x: x.month]).apply(cumulate_returns)
-    elif convert_to == 'yearly':
-        return returns.groupby(
-            [lambda x: x.year]).apply(cumulate_returns)
+            [lambda x: x.year, lambda x: x.month, lambda x: x.isocalendar()[1]]
+        ).apply(cumulate_returns)
+    elif convert_to == "monthly":
+        return returns.groupby([lambda x: x.year, lambda x: x.month]).apply(
+            cumulate_returns
+        )
+    elif convert_to == "yearly":
+        return returns.groupby([lambda x: x.year]).apply(cumulate_returns)
     else:
-        ValueError('convert_to must be weekly, monthly or yearly')
+        ValueError("convert_to must be weekly, monthly or yearly")
 
 
 def create_cagr(equity, periods=252):
@@ -50,7 +50,13 @@ def create_sharpe_ratio(returns, periods=252):
     returns - A pandas Series representing period percentage returns.
     periods - Daily (252), Hourly (252*6.5), Minutely(252*6.5*60) etc.
     """
-    return np.sqrt(periods) * (np.mean(returns)) / np.std(returns)
+
+    # sharpe_ratio: float = np.NaN
+    if np.std(returns) == 0:
+        sharpe_ratio: float = np.NaN
+    else:
+        sharpe_ratio: float = np.sqrt(periods) * (np.mean(returns)) / np.std(returns)
+    return sharpe_ratio
 
 
 def create_sortino_ratio(returns, periods=252):
@@ -62,7 +68,13 @@ def create_sortino_ratio(returns, periods=252):
     returns - A pandas Series representing period percentage returns.
     periods - Daily (252), Hourly (252*6.5), Minutely(252*6.5*60) etc.
     """
-    return np.sqrt(periods) * (np.mean(returns)) / np.std(returns[returns < 0])
+    if np.std(returns) == 0:
+        sortino_ratio: float = np.NaN
+    else:
+        sortino_ratio: float = (
+            np.sqrt(periods) * (np.mean(returns)) / np.std(returns[returns < 0])
+        )
+    return sortino_ratio
 
 
 def create_drawdowns(returns):
@@ -92,7 +104,6 @@ def create_drawdowns(returns):
     perf["Drawdown"].iloc[0] = 0.0
     perf["DurationCheck"] = np.where(perf["Drawdown"] == 0, 0, 1)
     duration = max(
-        sum(1 for i in g if i == 1)
-        for k, g in groupby(perf["DurationCheck"])
+        sum(1 for i in g if i == 1) for k, g in groupby(perf["DurationCheck"])
     )
     return perf["Drawdown"], np.max(perf["Drawdown"]), duration

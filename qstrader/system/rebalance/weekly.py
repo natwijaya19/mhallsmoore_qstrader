@@ -1,5 +1,8 @@
+from typing import List
+
 import pandas as pd
 import pytz
+from pandas import DatetimeIndex, Timestamp
 
 from qstrader.system.rebalance.rebalance import Rebalance
 
@@ -27,18 +30,18 @@ class WeeklyRebalance(Rebalance):
 
     def __init__(
         self,
-        start_date,
-        end_date,
-        weekday,
-        pre_market=False
+        start_date: pd.Timestamp,
+        end_date: pd.Timestamp,
+        weekday: str,
+        pre_market: bool = False,
     ):
         self.weekday = self._set_weekday(weekday)
         self.start_date = start_date
         self.end_date = end_date
-        self.pre_market_time = self._set_market_time(pre_market)
-        self.rebalances = self._generate_rebalances()
+        self.pre_market_time: str = self._set_market_time(pre_market)
+        self.rebalances: list[Timestamp] = self._generate_rebalances()
 
-    def _set_weekday(self, weekday):
+    def _set_weekday(self, weekday: str) -> str:
         """
         Checks that the weekday string corresponds to
         a business weekday.
@@ -64,7 +67,7 @@ class WeeklyRebalance(Rebalance):
         else:
             return weekday.upper()
 
-    def _set_market_time(self, pre_market):
+    def _set_market_time(self, pre_market: bool) -> str:
         """
         Determines whether to use market open or market close
         as the rebalance time.
@@ -82,7 +85,7 @@ class WeeklyRebalance(Rebalance):
         """
         return "14:30:00" if pre_market else "21:00:00"
 
-    def _generate_rebalances(self):
+    def _generate_rebalances(self) -> List[Timestamp]:
         """
         Output the rebalance timestamp list.
 
@@ -91,16 +94,12 @@ class WeeklyRebalance(Rebalance):
         `list[pd.Timestamp]`
             The list of rebalance timestamps.
         """
-        rebalance_dates = pd.date_range(
-            start=self.start_date,
-            end=self.end_date,
-            freq='W-%s' % self.weekday
+        rebalance_dates: DatetimeIndex = pd.date_range(
+            start=self.start_date, end=self.end_date, freq="W-%s" % self.weekday
         )
 
-        rebalance_times = [
-            pd.Timestamp(
-                "%s %s" % (date, self.pre_market_time), tz=pytz.utc
-            )
+        rebalance_times: list[Timestamp] = [
+            pd.Timestamp("%s %s" % (date, self.pre_market_time), tz=pytz.utc)
             for date in rebalance_dates
         ]
 
