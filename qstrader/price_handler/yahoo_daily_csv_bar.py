@@ -1,10 +1,10 @@
-import os
+import pathlib
 
 import pandas as pd
 
-from ..price_parser import PriceParser
 from .base import AbstractBarPriceHandler
 from ..event import BarEvent
+from ..price_parser import PriceParser
 
 
 class YahooDailyCsvBarPriceHandler(AbstractBarPriceHandler):
@@ -14,11 +14,15 @@ class YahooDailyCsvBarPriceHandler(AbstractBarPriceHandler):
     for each requested financial instrument and stream those to
     the provided events queue as BarEvents.
     """
+
     def __init__(
-        self, csv_dir, events_queue,
+        self,
+        csv_dir,
+        events_queue,
         init_tickers=None,
-        start_date=None, end_date=None,
-        calc_adj_returns=False
+        start_date=None,
+        end_date=None,
+        calc_adj_returns=False,
     ):
         """
         Takes the CSV directory, the events queue and a possible
@@ -46,8 +50,9 @@ class YahooDailyCsvBarPriceHandler(AbstractBarPriceHandler):
         the specified CSV data directory, converting them into
         them into a pandas DataFrame, stored in a dictionary.
         """
-        ticker_path = os.path.join(self.csv_dir, "%s.csv" % ticker)
-        self.tickers_data[ticker] = pd.io.parsers.read_csv(
+        # ticker_path = os.path.join(self.csv_dir, "%s.csv" % ticker)
+        ticker_path: pathlib.Path = pathlib.Path(self.csv_dir, f"{ticker}.csv")
+        self.tickers_data[ticker] = pd.read_csv(
             ticker_path, parse_dates=True, index_col=0
         )
         self.tickers_data[ticker]["Ticker"] = ticker
@@ -71,7 +76,7 @@ class YahooDailyCsvBarPriceHandler(AbstractBarPriceHandler):
         # This is added so that the ticker events are
         # always deterministic, otherwise unit test values
         # will differ
-        df['colFromIndex'] = df.index
+        df["colFromIndex"] = df.index
         df = df.sort_values(by=["colFromIndex", "Ticker"])
         if start is None and end is None:
             return df.iterrows()
@@ -98,7 +103,7 @@ class YahooDailyCsvBarPriceHandler(AbstractBarPriceHandler):
                 ticker_prices = {
                     "close": close,
                     "adj_close": adj_close,
-                    "timestamp": dft.index[0]
+                    "timestamp": dft.index[0],
                 }
                 self.tickers[ticker] = ticker_prices
             except OSError:
@@ -107,10 +112,7 @@ class YahooDailyCsvBarPriceHandler(AbstractBarPriceHandler):
                     "as no data CSV found for pricing." % ticker
                 )
         else:
-            print(
-                "Could not subscribe ticker %s "
-                "as is already subscribed." % ticker
-            )
+            print("Could not subscribe ticker %s " "as is already subscribed." % ticker)
 
     def _create_event(self, index, period, ticker, row):
         """
@@ -124,9 +126,15 @@ class YahooDailyCsvBarPriceHandler(AbstractBarPriceHandler):
         adj_close_price = PriceParser.parse(row["Adj Close"])
         volume = int(row["Volume"])
         bev = BarEvent(
-            ticker, index, period, open_price,
-            high_price, low_price, close_price,
-            volume, adj_close_price
+            ticker,
+            index,
+            period,
+            open_price,
+            high_price,
+            low_price,
+            close_price,
+            volume,
+            adj_close_price,
         )
         return bev
 
@@ -140,15 +148,11 @@ class YahooDailyCsvBarPriceHandler(AbstractBarPriceHandler):
         # percentage returns in a list
         # TODO: Make this faster
         if self.calc_adj_returns:
-            prev_adj_close = self.tickers[ticker][
-                "adj_close"
-            ] / float(PriceParser.PRICE_MULTIPLIER)
-            cur_adj_close = event.adj_close_price / float(
+            prev_adj_close = self.tickers[ticker]["adj_close"] / float(
                 PriceParser.PRICE_MULTIPLIER
             )
-            self.tickers[ticker][
-                "adj_close_ret"
-            ] = cur_adj_close / prev_adj_close - 1.0
+            cur_adj_close = event.adj_close_price / float(PriceParser.PRICE_MULTIPLIER)
+            self.tickers[ticker]["adj_close_ret"] = cur_adj_close / prev_adj_close - 1.0
             self.adj_close_returns.append(self.tickers[ticker]["adj_close_ret"])
         self.tickers[ticker]["close"] = event.close_price
         self.tickers[ticker]["adj_close"] = event.adj_close_price

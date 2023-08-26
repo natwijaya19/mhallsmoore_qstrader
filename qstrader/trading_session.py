@@ -17,15 +17,28 @@ class TradingSession(object):
     Enscapsulates the settings and components for
     carrying out either a backtest or live trading session.
     """
+
     def __init__(
-        self, config, strategy, tickers,
-        equity, start_date, end_date, events_queue,
-        session_type="backtest", end_session_time=None,
-        price_handler=None, portfolio_handler=None,
-        compliance=None, position_sizer=None,
-        execution_handler=None, risk_manager=None,
-        statistics=None, sentiment_handler=None,
-        title=None, benchmark=None
+        self,
+        config,
+        strategy,
+        tickers,
+        equity,
+        start_date,
+        end_date,
+        events_queue,
+        session_type="backtest",
+        end_session_time=None,
+        price_handler=None,
+        portfolio_handler=None,
+        compliance=None,
+        position_sizer=None,
+        execution_handler=None,
+        risk_manager=None,
+        statistics=None,
+        sentiment_handler=None,
+        title=None,
+        benchmark=None,
     ):
         """
         Set up the backtest variables according to
@@ -49,6 +62,7 @@ class TradingSession(object):
         self.title = title
         self.benchmark = benchmark
         self.session_type = session_type
+        self.end_session_time = end_session_time
         self._config_session()
         self.cur_time = None
 
@@ -63,9 +77,11 @@ class TradingSession(object):
         """
         if self.price_handler is None and self.session_type == "backtest":
             self.price_handler = YahooDailyCsvBarPriceHandler(
-                self.config.CSV_DATA_DIR, self.events_queue,
-                self.tickers, start_date=self.start_date,
-                end_date=self.end_date
+                self.config.CSV_DATA_DIR,
+                self.events_queue,
+                self.tickers,
+                start_date=self.start_date,
+                end_date=self.end_date,
             )
 
         if self.position_sizer is None:
@@ -80,7 +96,7 @@ class TradingSession(object):
                 self.events_queue,
                 self.price_handler,
                 self.position_sizer,
-                self.risk_manager
+                self.risk_manager,
             )
 
         if self.compliance is None:
@@ -88,15 +104,12 @@ class TradingSession(object):
 
         if self.execution_handler is None:
             self.execution_handler = IBSimulatedExecutionHandler(
-                self.events_queue,
-                self.price_handler,
-                self.compliance
+                self.events_queue, self.price_handler, self.compliance
             )
 
         if self.statistics is None:
             self.statistics = TearsheetStatistics(
-                self.config, self.portfolio_handler,
-                self.title, self.benchmark
+                self.config, self.portfolio_handler, self.title, self.benchmark
             )
 
     def _continue_loop_condition(self):
@@ -125,10 +138,7 @@ class TradingSession(object):
                 self.price_handler.stream_next()
             else:
                 if event is not None:
-                    if (
-                        event.type == EventType.TICK or
-                        event.type == EventType.BAR
-                    ):
+                    if event.type == EventType.TICK or event.type == EventType.BAR:
                         self.cur_time = event.time
                         # Generate any sentiment events here
                         if self.sentiment_handler is not None:
@@ -147,7 +157,9 @@ class TradingSession(object):
                     elif event.type == EventType.FILL:
                         self.portfolio_handler.on_fill(event)
                     else:
-                        raise NotImplementedError("Unsupported event.type '%s'" % event.type)
+                        raise NotImplementedError(
+                            "Unsupported event.type '%s'" % event.type
+                        )
 
     def start_trading(self, testing=False):
         """
@@ -158,11 +170,7 @@ class TradingSession(object):
         print("---------------------------------")
         print("Backtest complete.")
         print("Sharpe Ratio: %0.2f" % results["sharpe"])
-        print(
-            "Max Drawdown: %0.2f%%" % (
-                results["max_drawdown_pct"] * 100.0
-            )
-        )
+        print("Max Drawdown: %0.2f%%" % (results["max_drawdown_pct"] * 100.0))
         if not testing:
             self.statistics.plot_results()
         return results

@@ -1,12 +1,12 @@
 import os
 import time
 import warnings
+
 import yaml
 from munch import munchify, unmunchify
 
-
-ENV_VAR_ROOT = 'QSTRADER'
-DEFAULT_CONFIG_FILENAME = '~/qstrader.yml'
+ENV_VAR_ROOT = "QSTRADER"
+DEFAULT_CONFIG_FILENAME = "~/qstrader.yml"
 
 
 def from_env(key, default_value=None, root=ENV_VAR_ROOT):
@@ -16,26 +16,28 @@ def from_env(key, default_value=None, root=ENV_VAR_ROOT):
         ENV_VAR_KEY = root + "_" + key.upper()
     else:
         ENV_VAR_KEY = key.upper()
-    if default_value == '' or default_value is None:
+    if default_value == "" or default_value is None:
         try:
-            return(os.environ[ENV_VAR_KEY])
+            return os.environ[ENV_VAR_KEY]
         except Exception:
-            warnings.warn("You should pass %s using --%s or using environment variable %r" % (key, key, ENV_VAR_KEY))
-            return(default_value)
+            warnings.warn(
+                "You should pass %s using --%s or using environment variable %r"
+                % (key, key, ENV_VAR_KEY)
+            )
+            return default_value
     else:
-        return(default_value)
+        return default_value
 
 
-DEFAULT = munchify({
-    "CSV_DATA_DIR": from_env("CSV_DATA_DIR", "~/data"),
-    "OUTPUT_DIR": from_env("OUTPUT_DIR", "~/out")
-})
+DEFAULT = munchify(
+    {
+        "CSV_DATA_DIR": from_env("CSV_DATA_DIR", "~/data"),
+        "OUTPUT_DIR": from_env("OUTPUT_DIR", "~/out"),
+    }
+)
 
 
-TEST = munchify({
-    "CSV_DATA_DIR": "data",
-    "OUTPUT_DIR": "out"
-})
+TEST = munchify({"CSV_DATA_DIR": "..\data", "OUTPUT_DIR": "..\out"})
 
 
 def from_file(fname=DEFAULT_CONFIG_FILENAME, testing=False):
@@ -43,19 +45,27 @@ def from_file(fname=DEFAULT_CONFIG_FILENAME, testing=False):
         return TEST
     try:
         with open(os.path.expanduser(fname)) as fd:
-            conf = yaml.load(fd, Loader=yaml.FullLoader)
+            conf = yaml.safe_load(fd)
         conf = munchify(conf)
         return conf
     except IOError:
         print("A configuration file named '%s' is missing" % fname)
-        s_conf = yaml.dump(unmunchify(DEFAULT), explicit_start=True, indent=True, default_flow_style=False)
-        print("""
+        s_conf = yaml.dump(
+            unmunchify(DEFAULT),
+            explicit_start=True,
+            indent=True,
+            default_flow_style=False,
+        )
+        print(
+            """
 Creating this file
 
 %s
 
 You still have to create directories with data and put your data in!
-""" % s_conf)
+"""
+            % s_conf
+        )
         time.sleep(3)
         try:
             with open(os.path.expanduser(fname), "w") as fd:

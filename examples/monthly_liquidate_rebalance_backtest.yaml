@@ -1,0 +1,4 @@
+# CSV_DIR = ...\\data\\
+CSV_DATA_DIR: "..\\data\\"
+OUTPUT_DIR: "..\\out\\"
+
