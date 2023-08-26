@@ -3,11 +3,12 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 
+from data.data_handler import DataHandler
 from qstrader.asset.universe.universe import Universe
 from qstrader.data.daily_bar_csv import CSVDailyBarDataSource
 
 
-class BacktestDataHandler(object):
+class BacktestDataHandler(DataHandler):
     """ """
 
     def __init__(

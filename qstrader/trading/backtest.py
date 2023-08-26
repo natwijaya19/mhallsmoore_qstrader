@@ -135,7 +135,7 @@ class BacktestTradingSession(TradingSession):
         self.equity_curve: list = []
         self.target_allocations: list = []
 
-    def _is_rebalance_event(self, dt):
+    def _is_rebalance_event(self, dt: pd.Timestamp) -> bool:
         """
         Checks if the provided timestamp is part of the rebalance
         schedule of the backtest.

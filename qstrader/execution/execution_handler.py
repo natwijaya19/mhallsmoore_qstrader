@@ -1,7 +1,8 @@
-from typing import List
-
 import pandas as pd
 
+from qstrader.asset.universe.universe import Universe
+from qstrader.broker.broker import Broker
+from qstrader.execution.execution_algo.execution_algo import ExecutionAlgorithm
 from qstrader.execution.order import Order
 
 
@@ -31,11 +32,11 @@ class ExecutionHandler(object):
 
     def __init__(
         self,
-        broker,
-        broker_portfolio_id,
-        universe,
-        submit_orders=False,
-        execution_algo=None,
+        broker: Broker,
+        broker_portfolio_id: str,
+        universe: Universe,
+        submit_orders: bool = False,
+        execution_algo: ExecutionAlgorithm = None,
         data_handler=None,
     ):
         self.broker = broker
@@ -64,7 +65,7 @@ class ExecutionHandler(object):
         """
         return self.execution_algo(dt, rebalance_orders)
 
-    def __call__(self, dt: pd.Timestamp, rebalance_orders: list[Order]):
+    def __call__(self, dt: pd.Timestamp, rebalance_orders: list[Order]) -> None:
         """
         Take the list of rebalanced Orders generated from the
         portfolio construction process and execute them at the

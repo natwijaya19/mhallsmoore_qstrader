@@ -1,3 +1,5 @@
+from qstrader.broker.broker import Broker
+
 from qstrader.broker.fee_model.fee_model import FeeModel
 
 
@@ -67,7 +69,9 @@ class PercentFeeModel(FeeModel):
         """
         return self.tax_pct * abs(consideration)
 
-    def calc_total_cost(self, asset, quantity, consideration, broker=None):
+    def calc_total_cost(
+        self, asset: str, quantity: int, consideration: float, broker: Broker = None
+    ) -> float:
         """
         Calculate the total of any commission and/or tax
         for the trade of size 'consideration'.

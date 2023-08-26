@@ -1,5 +1,7 @@
 from collections import OrderedDict
 
+from qstrader.broker.transaction.transaction import Transaction
+
 from qstrader.broker.portfolio.position import Position
 
 
@@ -14,9 +16,9 @@ class PositionHandler(object):
         Initialise the PositionHandler object to generate
         an ordered dictionary containing the current positions.
         """
-        self.positions = OrderedDict()
+        self.positions: OrderedDict[str, Position] = OrderedDict()
 
-    def transact_position(self, transaction):
+    def transact_position(self, transaction: Transaction):
         """
         Execute the transaction and update the appropriate
         position for the transaction's asset accordingly.

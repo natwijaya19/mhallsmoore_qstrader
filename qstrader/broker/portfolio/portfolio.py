@@ -18,7 +18,7 @@ class Portfolio(object):
 
     Parameters
     ----------
-    start_dt : datetime
+    start_dt : pd.timestamp
         Portfolio creation datetime.
     starting_cash : float, optional
         Starting cash of the portfolio. Defaults to 100,000 USD.

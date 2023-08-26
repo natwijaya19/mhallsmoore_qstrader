@@ -1,15 +1,15 @@
 import queue
-from typing import Any
+from collections import OrderedDict
 
 import numpy as np
 import pandas as pd
 
-from broker.portfolio.portfolio import Portfolio
 from qstrader import settings
 from qstrader.broker.broker import Broker
 from qstrader.broker.fee_model.fee_model import FeeModel
 from qstrader.broker.fee_model.zero_fee_model import ZeroFeeModel
 from qstrader.broker.portfolio.portfolio import Portfolio
+from qstrader.broker.portfolio.position import Position
 from qstrader.broker.transaction.transaction import Transaction
 from qstrader.data.backtest_data_handler import BacktestDataHandler
 from qstrader.exchange.exchange import Exchange
@@ -322,7 +322,7 @@ class SimulatedBroker(Broker):
         name : `str`, optional
             The optional name string of the portfolio.
         """
-        portfolio_id_str = str(portfolio_id)
+        portfolio_id_str: str = str(portfolio_id)
         if portfolio_id_str in self.portfolios.keys():
             raise ValueError(
                 "Portfolio with ID '%s' already exists. Cannot create "
@@ -529,7 +529,7 @@ class SimulatedBroker(Broker):
             )
         return self.portfolios[portfolio_id].portfolio_to_dict()
 
-    def _execute_order(self, dt: pd.Timestamp, portfolio_id: str, order) -> None:
+    def _execute_order(self, dt: pd.Timestamp, portfolio_id: str, order: Order) -> None:
         """
         For a given portfolio ID string, create a Transaction instance from
         the provided Order and ensure the Portfolio is appropriately updated
@@ -551,7 +551,7 @@ class SimulatedBroker(Broker):
             "Asset with ticker symbol '%s'. Order with ID '%s' was "
             "not executed." % (order.asset, order.order_id)
         )
-        bid_ask = self.data_handler.get_asset_latest_bid_ask_price(dt, order.asset)
+        bid_ask: tuple[float, float] = self.data_handler.get_asset_latest_bid_ask_price(dt, order.asset)
         if bid_ask == (np.NaN, np.NaN):
             raise ValueError(price_err_msg)
 
@@ -561,8 +561,8 @@ class SimulatedBroker(Broker):
             price = bid_ask[1]
         else:  # Sell
             price = bid_ask[0]
-        consideration = round(price * order.quantity)
-        total_commission = self.fee_model.calc_total_cost(
+        consideration: int = round(price * order.quantity)
+        total_commission: float = self.fee_model.calc_total_cost(
             order.asset, order.quantity, consideration, self
         )
 
@@ -652,6 +652,10 @@ class SimulatedBroker(Broker):
         # Update portfolio asset values
         portfolio: str
         for portfolio in self.portfolios:
+            asset: str
+            asset_list: OrderedDict[str, Position] = self.portfolios[
+                portfolio
+            ].pos_handler.positions
             for asset in self.portfolios[portfolio].pos_handler.positions:
                 mid_price: float = self.data_handler.get_asset_latest_mid_price(
                     dt, asset
@@ -662,11 +666,14 @@ class SimulatedBroker(Broker):
 
         # Try to execute orders
         if self.exchange.is_open_at_datetime(self.current_dt):
-            orders = []
+            orders: list[tuple[str, Order]] = []
             for portfolio in self.portfolios:
                 while not self.open_orders[portfolio].empty():
                     orders.append((portfolio, self.open_orders[portfolio].get()))
 
-            sorted_orders = sorted(orders, key=lambda x: x[1].direction)
+            sorted_orders: list[tuple[str, Order]] = sorted(
+                orders, key=lambda x: x[1].direction
+            )
+            order: Order
             for portfolio, order in sorted_orders:
                 self._execute_order(dt, portfolio, order)

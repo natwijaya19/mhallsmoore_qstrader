@@ -1,6 +1,6 @@
-from typing import Dict, List
-
 import pandas as pd
+from pandas import Timestamp
+from qstrader.data.data_handler import DataHandler
 
 from qstrader import settings
 from qstrader.alpha_model.alpha_model import AlphaModel
@@ -54,7 +54,7 @@ class PortfolioConstructionModel(object):
         alpha_model: AlphaModel = None,
         risk_model: AlphaModel = None,
         cost_model: FeeModel = None,
-        data_handler: BacktestDataHandler = None,
+        data_handler: DataHandler = None,
     ):
         self.broker = broker
         self.broker_portfolio_id = broker_portfolio_id
@@ -81,7 +81,9 @@ class PortfolioConstructionModel(object):
         `list[str]`
             The sorted full list of Asset symbol strings.
         """
-        broker_portfolio: dict[str, dict] = self.broker.get_portfolio_as_dict(self.broker_portfolio_id)
+        broker_portfolio: dict[str, dict] = self.broker.get_portfolio_as_dict(
+            self.broker_portfolio_id
+        )
         broker_assets: list[str] = list(broker_portfolio.keys())
         universe_assets: list[str] = self.universe.get_assets(dt)
         return sorted(list(set(broker_assets).union(set(universe_assets))))
@@ -129,8 +131,8 @@ class PortfolioConstructionModel(object):
         return {**zero_weights, **optimised_weights}
 
     def _generate_target_portfolio(
-        self, dt: pd.Timestamp, weights: dict[str, float]
-    ) -> dict[str, dict]:
+        self, dt: Timestamp, weights: dict[str, float]
+    ) -> dict[str, dict[str, int]]:
         """
         Generate the number of units (shares/lots) per Asset based on the
         target weight vector.
@@ -148,7 +150,9 @@ class PortfolioConstructionModel(object):
         `dict{str: dict}`
             Target asset quantities in integral units.
         """
-        return self.order_sizer(dt, weights)
+
+        target_portfolio: dict[str, dict[str, float]] = self.order_sizer(dt, weights)
+        return target_portfolio
 
     def _obtain_current_portfolio(self) -> dict[str, dict]:
         """
@@ -165,8 +169,8 @@ class PortfolioConstructionModel(object):
     def _generate_rebalance_orders(
         self,
         dt: pd.Timestamp,
-        target_portfolio: dict[str, dict],
-        current_portfolio: dict[str, dict],
+        target_portfolio: dict[str, dict[str, int]],
+        current_portfolio: dict[str, dict[str, int]],
     ) -> list[Order]:
         """
         Creates an incremental list of rebalancing Orders from the provided
@@ -190,6 +194,7 @@ class PortfolioConstructionModel(object):
         # Set all assets from the target portfolio that
         # aren't in the current portfolio to zero quantity
         # within the current portfolio
+        asset: str
         for asset in target_portfolio:
             if asset not in current_portfolio:
                 current_portfolio[asset] = {"quantity": 0}
@@ -204,7 +209,7 @@ class PortfolioConstructionModel(object):
 
         # Iterate through the asset list and create the difference
         # quantities required for each asset
-        rebalance_portfolio = {}
+        rebalance_portfolio: dict[str, dict[str, int]] = {}
         for asset in target_portfolio.keys():
             target_qty = target_portfolio[asset]["quantity"]
             current_qty = current_portfolio[asset]["quantity"]
@@ -301,13 +306,16 @@ class PortfolioConstructionModel(object):
             stats["target_allocations"].append(alloc_dict)
 
         # Calculate target portfolio in notional
-        target_portfolio = self._generate_target_portfolio(dt, full_weights)
+        # target_fortfolio[asset_symbol] = {"quantity": quantity}}
+        target_portfolio: dict[str, dict[str, int]] = self._generate_target_portfolio(
+            dt, full_weights
+        )
 
         # Obtain current Broker account portfolio
-        current_portfolio = self._obtain_current_portfolio()
+        current_portfolio: dict[str, dict[str, int]] = self._obtain_current_portfolio()
 
         # Create rebalance trade Orders
-        rebalance_orders = self._generate_rebalance_orders(
+        rebalance_orders: list[Order] = self._generate_rebalance_orders(
             dt, target_portfolio, current_portfolio
         )
         # TODO: Implement cost model

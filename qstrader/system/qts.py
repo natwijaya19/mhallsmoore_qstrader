@@ -3,11 +3,13 @@ from __future__ import annotations
 from qstrader.alpha_model.alpha_model import AlphaModel
 from qstrader.asset.universe.universe import Universe
 from qstrader.broker.broker import Broker
-from qstrader.data.backtest_data_handler import BacktestDataHandler
-from qstrader.execution.execution_algo.market_order import MarketOrderExecutionAlgorithm
+from qstrader.data.data_handler import DataHandler
+from qstrader.execution.execution_algo.market_order import \
+    MarketOrderExecutionAlgorithm
 from qstrader.execution.execution_handler import ExecutionHandler
 from qstrader.execution.order import Order
-from qstrader.portcon.optimiser.fixed_weight import FixedWeightPortfolioOptimiser
+from qstrader.portcon.optimiser.fixed_weight import \
+    FixedWeightPortfolioOptimiser
 from qstrader.portcon.order_sizer.dollar_weighted import (
     DollarWeightedCashBufferedOrderSizer,
 )
@@ -49,7 +51,7 @@ class QuantTradingSystem(object):
         universe: Universe,
         broker: Broker,
         broker_portfolio_id: str,
-        data_handler: BacktestDataHandler,
+        data_handler: DataHandler,
         alpha_model: AlphaModel,
         *args,
         risk_model: AlphaModel = None,

@@ -1,4 +1,9 @@
+from typing import Dict
+
 import numpy as np
+import pandas as pd
+from qstrader.data.data_handler import DataHandler
+
 from qstrader.data.backtest_data_handler import BacktestDataHandler
 
 from qstrader.broker.broker import Broker
@@ -35,7 +40,7 @@ class DollarWeightedCashBufferedOrderSizer(OrderSizer):
         self,
         broker: Broker,
         broker_portfolio_id: str,
-        data_handler: BacktestDataHandler,
+        data_handler: DataHandler,
         cash_buffer_percentage: float = 0.05,
     ):
         self.broker = broker
@@ -111,7 +116,9 @@ class DollarWeightedCashBufferedOrderSizer(OrderSizer):
 
         return {asset: (weight / weight_sum) for asset, weight in weights.items()}
 
-    def __call__(self, dt, weights):
+    def __call__(
+        self, dt: pd.Timestamp, weights: dict[str, float]
+    ) -> dict[str, dict[str, int]]:
         """
         Creates a dollar-weighted cash-buffered target portfolio from the
         provided target weights at a particular timestamp.
@@ -128,8 +135,10 @@ class DollarWeightedCashBufferedOrderSizer(OrderSizer):
         `dict{Asset: dict}`
             The cash-buffered target portfolio dictionary with quantities.
         """
-        total_equity = self._obtain_broker_portfolio_total_equity()
-        cash_buffered_total_equity = total_equity * (1.0 - self.cash_buffer_percentage)
+        total_equity: float = self._obtain_broker_portfolio_total_equity()
+        cash_buffered_total_equity: float = total_equity * (
+            1.0 - self.cash_buffer_percentage
+        )
 
         # Pre-cost dollar weight
         N = len(weights)
@@ -139,21 +148,23 @@ class DollarWeightedCashBufferedOrderSizer(OrderSizer):
             return {}
 
         # Ensure weight vector sums to unity
-        normalised_weights = self._normalise_weights(weights)
+        normalised_weights: dict[str, float] = self._normalise_weights(weights)
 
-        target_portfolio = {}
+        target_portfolio: dict[str, dict[str, int]] = {}
+        asset: str
+        weight: float
         for asset, weight in sorted(normalised_weights.items()):
-            pre_cost_dollar_weight = cash_buffered_total_equity * weight
+            pre_cost_dollar_weight: float = cash_buffered_total_equity * weight
 
             # Estimate broker fees for this asset
-            est_quantity = 0  # TODO: Needs to be added for IB
-            est_costs = self.broker.fee_model.calc_total_cost(
+            est_quantity: int = 0  # TODO: Needs to be added for IB
+            est_costs: float = self.broker.fee_model.calc_total_cost(
                 asset, est_quantity, pre_cost_dollar_weight, broker=self.broker
             )
 
             # Calculate integral target asset quantity assuming broker costs
-            after_cost_dollar_weight = pre_cost_dollar_weight - est_costs
-            asset_price = self.data_handler.get_asset_latest_ask_price(dt, asset)
+            after_cost_dollar_weight: float = pre_cost_dollar_weight - est_costs
+            asset_price: float = self.data_handler.get_asset_latest_ask_price(dt, asset)
 
             if np.isnan(asset_price):
                 raise ValueError(
@@ -164,7 +175,7 @@ class DollarWeightedCashBufferedOrderSizer(OrderSizer):
                 )
 
             # TODO: Long only for the time being.
-            asset_quantity = int(np.floor(after_cost_dollar_weight / asset_price))
+            asset_quantity: int = int(np.floor(after_cost_dollar_weight / asset_price))
 
             # Add to the target portfolio
             target_portfolio[asset] = {"quantity": asset_quantity}

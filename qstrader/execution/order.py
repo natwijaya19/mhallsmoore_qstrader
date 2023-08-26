@@ -47,7 +47,7 @@ class Order(object):
         self.direction: int = np.copysign(1, self.quantity)  # 1 or -1
         self.order_id: str = self._set_or_generate_order_id(order_id)
 
-    def _order_attribs_equal(self, other):
+    def _order_attribs_equal(self, other: type(Order)) -> bool:
         """
         Asserts whether all attributes of the Order are equal
         with the exception of the order ID.
@@ -100,7 +100,7 @@ class Order(object):
             )
         )
 
-    def _set_or_generate_order_id(self, order_id: Order = None) -> str:
+    def _set_or_generate_order_id(self, order_id: str = None) -> str:
         """
         Sets or generates a unique order ID for the order, using a UUID.
 
